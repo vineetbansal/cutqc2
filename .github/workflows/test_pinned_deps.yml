@@ -36,7 +36,7 @@ jobs:
 
     - name: Pre-commit checks
       run: |
-          uv run pre-commit run --all-files
+          uvx pre-commit run --all-files
 
     - name: Pytest with coverage
       run: uv run coverage run --source=src/cudaqut -m pytest
