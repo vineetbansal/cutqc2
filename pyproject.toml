@@ -19,7 +19,7 @@ dependencies = [
     "scikit-learn",
     "tensorflow",
     "networkx",
-    "gurobipy",
+    "gurobipy<12",
     "psutil",
     "qiskit-aer"
 ]

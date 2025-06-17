@@ -7,7 +7,7 @@ from qiskit.quantum_info import Statevector
 import numpy as np
 import psutil
 
-from helper_functions.conversions import dict_to_array
+from ..helper_functions.conversions import dict_to_array
 
 
 def scrambled(orig):

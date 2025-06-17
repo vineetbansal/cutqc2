@@ -1,17 +1,17 @@
 import subprocess, os, logging
 from time import perf_counter
 
-from cutqc.helper_fun import check_valid, add_times
+from ..cutqc.helper_fun import check_valid, add_times
 
-from cutqc.cutter import find_cuts
+from ..cutqc.cutter import find_cuts
 
-from cutqc.evaluator import run_subcircuit_instances, attribute_shots
-from cutqc.post_process_helper import (
+from ..cutqc.evaluator import run_subcircuit_instances, attribute_shots
+from ..cutqc.post_process_helper import (
     generate_subcircuit_entries,
     generate_compute_graph,
 )
 
-from cutqc.dynamic_definition import DynamicDefinition, full_verify
+from ..cutqc.dynamic_definition import DynamicDefinition, full_verify
 
 
 class CutQC:
