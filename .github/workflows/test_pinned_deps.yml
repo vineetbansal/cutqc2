@@ -39,4 +39,5 @@ jobs:
           uvx pre-commit run --all-files
 
     - name: Pytest with coverage
-      run: uv run coverage run --source=src/cudaqut -m pytest
+      run: |
+        uv run python -m pytest

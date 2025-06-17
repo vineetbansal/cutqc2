@@ -10,7 +10,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy",
-    "qiskit",
+    "qiskit==1.2",
     "matplotlib",
     "pydot",
     "scipy",
