@@ -2,15 +2,15 @@ import itertools, copy, pickle, subprocess, logging
 from time import perf_counter
 import numpy as np
 
-from helper_functions.non_ibmq_functions import evaluate_circ
-from helper_functions.conversions import quasi_to_real
-from helper_functions.metrics import MSE
+from cudaqut.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
+from cudaqut.cutqc.helper_functions.conversions import quasi_to_real
+from cudaqut.cutqc.helper_functions.metrics import MSE
 
-from cutqc.evaluator import get_num_workers
+from cudaqut.cutqc.cutqc.evaluator import get_num_workers
 
-from cutqc.graph_contraction import GraphContractor
-from cutqc.helper_fun import add_times
-from cutqc.post_process_helper import get_reconstruction_qubit_order
+from cudaqut.cutqc.cutqc.graph_contraction import GraphContractor
+from cudaqut.cutqc.cutqc.helper_fun import add_times
+from cudaqut.cutqc.cutqc.post_process_helper import get_reconstruction_qubit_order
 
 
 class DynamicDefinition(object):
