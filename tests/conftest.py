@@ -1,6 +1,5 @@
 from math import pi
 from qiskit import QuantumCircuit
-import cudaq
 import pytest
 
 
@@ -45,45 +44,3 @@ def figure_4_qiskit_circuit():
     qc.measure_all()
 
     return qc
-
-
-@pytest.fixture(scope="module")
-def figure_4_cudaq_kernel():
-    def cudaq_kernel_function():
-        qubits = cudaq.qvector(5)
-
-        h(qubits[0])
-        h(qubits[1])
-        h(qubits[2])
-        h(qubits[3])
-        h(qubits[4])
-
-        cz(qubits[0], qubits[1])
-
-        t(qubits[2])
-        t(qubits[3])
-        t(qubits[4])
-
-        cz(qubits[0], qubits[2])
-
-        rx(math.pi / 2, qubits[4])
-
-        rx(math.pi / 2, qubits[0])
-        rx(math.pi / 2, qubits[1])
-
-        cz(qubits[2], qubits[4])
-
-        t(qubits[0])
-        t(qubits[1])
-
-        cz(qubits[2], qubits[3])
-
-        rx(math.pi / 2, qubits[4])
-
-        h(qubits[0])
-        h(qubits[1])
-        h(qubits[2])
-        h(qubits[3])
-        h(qubits[4])
-
-    return cudaq_kernel_function

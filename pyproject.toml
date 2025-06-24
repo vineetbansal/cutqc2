@@ -39,7 +39,3 @@ addopts = "-sv"
 
 [tool.ruff]
 exclude = ["src/cudaqut/cutqc/**"]
-
-[tool.ruff.lint.per-file-ignores]
-# CudaQ kernels by convention pick up gates magically - h(), x() etc.
-"tests/conftest.py" = ["F821"]

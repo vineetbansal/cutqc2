@@ -18,8 +18,27 @@ def total_variation_distance(counts1, counts2):
 
 def test_kernel_str(figure_4_qiskit_circuit):
     cudaq_kernel = Kernel("my_cudaq_kernel", figure_4_qiskit_circuit)
-    got_str = cudaq_kernel.ast_module_src.strip()
+    got_str = str(cudaq_kernel)
     expected_str = textwrap.dedent("""
+             ╭───╮                  ╭───────────╮    ╭───╮    ╭───╮
+        q0 : ┤ h ├──●────────●──────┤ rx(1.571) ├────┤ t ├────┤ h ├
+             ├───┤╭─┴─╮      │      ├───────────┤    ├───┤    ├───┤
+        q1 : ┤ h ├┤ z ├──────┼──────┤ rx(1.571) ├────┤ t ├────┤ h ├
+             ├───┤├───┤    ╭─┴─╮    ╰───────────╯    ╰───╯    ├───┤
+        q2 : ┤ h ├┤ t ├────┤ z ├──────────●────────────●──────┤ h ├
+             ├───┤├───┤    ╰───╯          │          ╭─┴─╮    ├───┤
+        q3 : ┤ h ├┤ t ├───────────────────┼──────────┤ z ├────┤ h ├
+             ├───┤├───┤╭───────────╮    ╭─┴─╮    ╭───┴───┴───╮├───┤
+        q4 : ┤ h ├┤ t ├┤ rx(1.571) ├────┤ z ├────┤ rx(1.571) ├┤ h ├
+             ╰───╯╰───╯╰───────────╯    ╰───╯    ╰───────────╯╰───╯
+    """).lstrip("\n")
+    assert got_str == expected_str
+
+
+def test_kernel_src(figure_4_qiskit_circuit):
+    cudaq_kernel = Kernel("my_cudaq_kernel", figure_4_qiskit_circuit)
+    got_src = cudaq_kernel.src.strip()
+    expected_src = textwrap.dedent("""
         def my_cudaq_kernel():
             qubits = cudaq.qvector(5)
             h(qubits[0])
@@ -47,7 +66,7 @@ def test_kernel_str(figure_4_qiskit_circuit):
             h(qubits[4])
     """).strip()
 
-    assert got_str == expected_str
+    assert got_src == expected_src
 
 
 def test_kernel_shot_distribution(figure_4_qiskit_circuit):
@@ -60,7 +79,6 @@ def test_kernel_shot_distribution(figure_4_qiskit_circuit):
     qiskit_counts = qiskit_result[0].data.meas.get_counts()
 
     cudaq_kernel = Kernel("cudaq_kernel", figure_4_qiskit_circuit)
-    cudaq_kernel.compile()
     cudaq_results = cudaq.sample(cudaq_kernel, shots_count=shots)
     cudaq_counts = dict(cudaq_results.items())
     # CudaQ count bitstrings are LSB-first: the leftmost bit corresponds to
