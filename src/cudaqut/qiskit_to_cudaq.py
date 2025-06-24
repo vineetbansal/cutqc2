@@ -46,17 +46,28 @@ class Kernel:
 
         def single_qubit_gate(gate: str,
                               instr: "qiskit._accelerate.circuit.CircuitInstruction") -> ast.Expr:  # TODO: avoid using private API
+
+            params = []
+            for param in instr.params:
+                params.append(
+                    ast.Constant(param)
+                )
+
             qubit_index = instr.qubits[
                 0]._index  # TODO: avoid using private API
             return ast.Expr(
                 value=ast.Call(
-                    func=ast.Name(id=single_qubit_gate_mapping[gate],
-                                  ctx=ast.Load()),
-                    args=[ast.Subscript(
-                        value=ast.Name(id='qubits', ctx=ast.Load()),
-                        slice=ast.Constant(qubit_index),
+                    func=ast.Name(
+                        id=single_qubit_gate_mapping[gate],
                         ctx=ast.Load()
-                    )],
+                    ),
+                    args=[
+                        *params,
+                        ast.Subscript(
+                            value=ast.Name(id='qubits', ctx=ast.Load()),
+                            slice=ast.Constant(qubit_index),
+                            ctx=ast.Load()
+                        )],
                     keywords=[]
                 )
             )
@@ -69,8 +80,10 @@ class Kernel:
 
             return ast.Expr(
                 value=ast.Call(
-                    func=ast.Name(id=multi_qubit_gate_mapping[gate],
-                                  ctx=ast.Load()),
+                    func=ast.Name(
+                        id=multi_qubit_gate_mapping[gate],
+                        ctx=ast.Load()
+                    ),
                     args=[
                         ast.Subscript(
                             value=ast.Name(id='qubits', ctx=ast.Load()),
