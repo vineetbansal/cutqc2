@@ -5,11 +5,9 @@ from cudaq.mlir._mlir_libs._quakeDialects import cudaq_runtime
 
 
 class Kernel:
-    def __init__(self, kernel_name: str,
-                 qiskit_circuit: qiskit.QuantumCircuit):
+    def __init__(self, kernel_name: str, qiskit_circuit: qiskit.QuantumCircuit):
         self.kernel_name = kernel_name
-        self.ast_module = self.get_cudaq_ast_module(self.kernel_name,
-                                                    qiskit_circuit)
+        self.ast_module = self.get_cudaq_ast_module(self.kernel_name, qiskit_circuit)
         self.ast_module_src = ast.unparse(self.ast_module)
 
         # Ideally something like this should work,
@@ -31,28 +29,21 @@ class Kernel:
         cudaq_runtime.pyAltLaunchKernel(self.kernel_name, self.module)
 
     @staticmethod
-    def get_cudaq_ast_module(name: str,
-                             qc: qiskit.QuantumCircuit) -> ast.Module:
-
-        single_qubit_gate_mapping = {
-            "h": "h",
-            "t": "t",
-            "rx": "rx"
-        }
+    def get_cudaq_ast_module(name: str, qc: qiskit.QuantumCircuit) -> ast.Module:
+        single_qubit_gate_mapping = {"h": "h", "t": "t", "rx": "rx"}
 
         multi_qubit_gate_mapping = {
             "cz": "cz",
         }
 
-        def single_qubit_gate(qc: qiskit.QuantumCircuit,
-                              gate: str,
-                              instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction) -> ast.Expr:
-
+        def single_qubit_gate(
+            qc: qiskit.QuantumCircuit,
+            gate: str,
+            instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction,
+        ) -> ast.Expr:
             params = []
             for param in instr.params:
-                params.append(
-                    ast.Constant(param)
-                )
+                params.append(ast.Constant(param))
 
             # TODO: It would be nice to obtain the index from the Qubit object
             # itself, but there seems to be no way other than to reach for
@@ -61,26 +52,27 @@ class Kernel:
 
             return ast.Expr(
                 value=ast.Call(
-                    func=ast.Name(
-                        id=single_qubit_gate_mapping[gate],
-                        ctx=ast.Load()
-                    ),
+                    func=ast.Name(id=single_qubit_gate_mapping[gate], ctx=ast.Load()),
                     args=[
                         *params,
                         ast.Subscript(
-                            value=ast.Name(id='qubits', ctx=ast.Load()),
+                            value=ast.Name(id="qubits", ctx=ast.Load()),
                             slice=ast.Constant(qubit_index),
-                            ctx=ast.Load()
-                        )],
-                    keywords=[]
+                            ctx=ast.Load(),
+                        ),
+                    ],
+                    keywords=[],
                 )
             )
 
-        def multi_qubit_gate(qc: qiskit.QuantumCircuit,
-                             gate: str,
-                             instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction) -> ast.Expr:
-            assert len(
-                instr.qubits) == 2, "Only two-qubit multi-qubit gates are supported for now"
+        def multi_qubit_gate(
+            qc: qiskit.QuantumCircuit,
+            gate: str,
+            instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction,
+        ) -> ast.Expr:
+            assert len(instr.qubits) == 2, (
+                "Only two-qubit multi-qubit gates are supported for now"
+            )
 
             # TODO: It would be nice to obtain the index from the Qubit object
             # itself, but there seems to be no way other than to reach for
@@ -90,36 +82,36 @@ class Kernel:
 
             return ast.Expr(
                 value=ast.Call(
-                    func=ast.Name(
-                        id=multi_qubit_gate_mapping[gate],
-                        ctx=ast.Load()
-                    ),
+                    func=ast.Name(id=multi_qubit_gate_mapping[gate], ctx=ast.Load()),
                     args=[
                         ast.Subscript(
-                            value=ast.Name(id='qubits', ctx=ast.Load()),
+                            value=ast.Name(id="qubits", ctx=ast.Load()),
                             slice=ast.Constant(from_qubit_index),
-                            ctx=ast.Load()
+                            ctx=ast.Load(),
                         ),
                         ast.Subscript(
-                            value=ast.Name(id='qubits', ctx=ast.Load()),
+                            value=ast.Name(id="qubits", ctx=ast.Load()),
                             slice=ast.Constant(to_qubit_index),
-                            ctx=ast.Load()
+                            ctx=ast.Load(),
                         ),
                     ],
-                    keywords=[]
+                    keywords=[],
                 )
             )
 
         body = []
         qvec_assign = ast.Assign(
             lineno=None,
-            targets=[ast.Name(id='qubits', ctx=ast.Store())],
+            targets=[ast.Name(id="qubits", ctx=ast.Store())],
             value=ast.Call(
-                func=ast.Attribute(value=ast.Name(id='cudaq', ctx=ast.Load()),
-                                   attr='qvector', ctx=ast.Load()),
+                func=ast.Attribute(
+                    value=ast.Name(id="cudaq", ctx=ast.Load()),
+                    attr="qvector",
+                    ctx=ast.Load(),
+                ),
                 args=[ast.Constant(value=qc.num_qubits)],
-                keywords=[]
-            )
+                keywords=[],
+            ),
         )
         body.append(qvec_assign)
 
@@ -128,13 +120,9 @@ class Kernel:
             if instr_name in ("reset", "measure", "measure_all", "barrier"):
                 continue  # TODO: Handle these!
             elif instr_name in single_qubit_gate_mapping:
-                body.append(
-                    single_qubit_gate(qc, instr_name, instr)
-                )
+                body.append(single_qubit_gate(qc, instr_name, instr))
             elif instr_name in multi_qubit_gate_mapping:
-                body.append(
-                    multi_qubit_gate(qc, instr_name, instr)
-                )
+                body.append(multi_qubit_gate(qc, instr_name, instr))
             else:
                 raise NotImplementedError(f"Unsupported gate: {instr_name}")
 
@@ -148,13 +136,13 @@ class Kernel:
                         args=[],
                         kwonlyargs=[],
                         kw_defaults=[],
-                        defaults=[]
+                        defaults=[],
                     ),
                     body=body,
                     decorator_list=[],
                     returns=None,
-                    type_comment=None
+                    type_comment=None,
                 )
             ],
-            type_ignores=[]
+            type_ignores=[],
         )

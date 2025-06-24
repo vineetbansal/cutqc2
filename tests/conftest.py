@@ -25,16 +25,16 @@ def figure_4_qiskit_circuit():
     qc.t(4)
 
     qc.cz(0, 2)
-    qc.rx(pi/2, 4)
+    qc.rx(pi / 2, 4)
 
-    qc.rx(pi/2, 0)
-    qc.rx(pi/2, 1)
+    qc.rx(pi / 2, 0)
+    qc.rx(pi / 2, 1)
     qc.cz(2, 4)
 
     qc.t(0)
     qc.t(1)
     qc.cz(2, 3)
-    qc.rx(pi/2, 4)
+    qc.rx(pi / 2, 4)
 
     qc.h(0)
     qc.h(1)

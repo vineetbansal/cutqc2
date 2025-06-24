@@ -35,7 +35,7 @@ def test_cut():
             "max_subcircuit_cuts": 1,
             "subcircuit_size_imbalance": 1,
             "max_cuts": 1,
-            "num_subcircuits": [2]
+            "num_subcircuits": [2],
         },
         verbose=True,
     )

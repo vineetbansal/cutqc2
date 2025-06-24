@@ -52,7 +52,9 @@ def test_kernel_str(figure_4_qiskit_circuit):
 
 def test_kernel_shot_distribution(figure_4_qiskit_circuit):
     shots = 1_000_000
-    qiskit_result = StatevectorSampler().run([figure_4_qiskit_circuit], shots=shots).result()
+    qiskit_result = (
+        StatevectorSampler().run([figure_4_qiskit_circuit], shots=shots).result()
+    )
     # Qiskit count bitstrings are MSB-first: the leftmost bit corresponds to
     # the highest qubit index (the 'bottom' wire)
     qiskit_counts = qiskit_result[0].data.meas.get_counts()
