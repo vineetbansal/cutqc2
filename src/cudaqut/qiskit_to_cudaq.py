@@ -1,39 +1,102 @@
 import ast
 import qiskit
-from cudaq.kernel.ast_bridge import compile_to_mlir
-from cudaq.mlir._mlir_libs._quakeDialects import cudaq_runtime
+from cudaq import kernel, draw
+
+
+"""
+Mapping of Qiskit gates to CUDAq gates.
+If a gate is not found here, it is assumed that it has the same name in
+CUDAq and Qiskit.
+"""
+QISKIT_TO_CUDAQ_GATES = {}
 
 
 class Kernel:
     def __init__(self, kernel_name: str, qiskit_circuit: qiskit.QuantumCircuit):
         self.kernel_name = kernel_name
-        self.ast_module = self.get_cudaq_ast_module(self.kernel_name, qiskit_circuit)
-        self.ast_module_src = ast.unparse(self.ast_module)
+        self._module = self.get_cudaq_ast_module(self.kernel_name, qiskit_circuit)
+        self.src = ast.unparse(self._module)
 
-        self.compile()
-
-        # Ideally something like this should work,
-        # but looks like `self.parentFrame = inspect.stack()[2].frame`
-        # in `kernel_decorator.py` in cudaq source is an unjustified assumption
-        # and is messing things up.
-
-        # ... = PyKernelDecorator(function="placeholder_string",
-        #                   funcSrc=self.ast_module_src,
-        #                   kernelName=self.kernel_name,
-        #                   location=('0', 1),
-        #                   signature={},
-        #                   overrideGlobalScopedVars={"foo": "bar"})
-
-    def compile(self) -> None:
-        self.module, _, _ = compile_to_mlir(self.ast_module, capturedDataStorage=None)
+        """
+        `cudaq.kernel.kernel_decorator.PyKernelDecorator` has somewhat strange
+        behavior. It inspects `function` to see if its a string to determine
+        whether to deserialize, yet then looks at funcSrc to do the actual
+        deserialization.
+        """
+        self.wrapped_kernel = kernel(
+            funcSrc=self.src, kernelName=self.kernel_name, signature={}
+        )(function="")
 
     def __call__(self) -> None:
-        cudaq_runtime.pyAltLaunchKernel(self.kernel_name, self.module)
+        return self.wrapped_kernel()
+
+    def __str__(self) -> str:
+        return draw(self.wrapped_kernel)
 
     @staticmethod
-    def get_cudaq_ast_module(name: str, qiskit_circuit: qiskit.QuantumCircuit) -> ast.Module:
-        # This is just a hardcoded module corresponding to Figure 4 in the
-        # paper. Replace with a dynamically constructed one.
+    def get_cudaq_ast_module(name: str, qc: qiskit.QuantumCircuit) -> ast.Module:
+        def gate(
+            qc: qiskit.QuantumCircuit,
+            gate: str,
+            instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction,
+        ) -> ast.Expr:
+            # First, add any params
+            params = []
+            for param in instr.params:
+                params.append(ast.Constant(param))
+
+            # Second, add any qubit(s) on which this gate operates
+            qubits = []
+            for qubit in instr.qubits:
+                """
+                It would be nice to obtain the qubit wire index from the Qubit
+                object itself, but there seems to be no way other than to reach
+                for its private `._index` attribute.
+                So we choose to find it in `qc.qubits` instead.
+                """
+                qubit_index = qc.qubits.index(qubit)
+
+                qubits.append(
+                    ast.Subscript(
+                        value=ast.Name(id="qubits", ctx=ast.Load()),
+                        slice=ast.Constant(qubit_index),
+                        ctx=ast.Load(),
+                    )
+                )
+
+            return ast.Expr(
+                value=ast.Call(
+                    func=ast.Name(
+                        id=QISKIT_TO_CUDAQ_GATES.get(gate, gate), ctx=ast.Load()
+                    ),
+                    args=[*params, *qubits],
+                    keywords=[],
+                )
+            )
+
+        body = []
+        qvec_assign = ast.Assign(
+            lineno=None,
+            targets=[ast.Name(id="qubits", ctx=ast.Store())],
+            value=ast.Call(
+                func=ast.Attribute(
+                    value=ast.Name(id="cudaq", ctx=ast.Load()),
+                    attr="qvector",
+                    ctx=ast.Load(),
+                ),
+                args=[ast.Constant(value=qc.num_qubits)],
+                keywords=[],
+            ),
+        )
+        body.append(qvec_assign)
+
+        for instr in qc.data:
+            instr_name = instr.name
+            if instr_name in ("reset", "measure", "measure_all", "barrier"):
+                continue  # TODO: Handle these!
+            else:  # assume gate
+                body.append(gate(qc, instr_name, instr))
+
         return ast.Module(
             body=[
                 ast.FunctionDef(
@@ -44,207 +107,13 @@ class Kernel:
                         args=[],
                         kwonlyargs=[],
                         kw_defaults=[],
-                        defaults=[]
+                        defaults=[],
                     ),
-                    body=[
-                        ast.Assign(
-                            lineno=None,
-                            targets=[ast.Name(id='qubits', ctx=ast.Store())],
-                            value=ast.Call(
-                                func=ast.Attribute(
-                                    value=ast.Name(id='cudaq', ctx=ast.Load()),
-                                    attr='qvector',
-                                    ctx=ast.Load()
-                                ),
-                                args=[ast.Constant(value=5)],
-                                keywords=[]
-                            )
-                        ),
-                        # H gates
-                        *[ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='h', ctx=ast.Load()),
-                                args=[ast.Subscript(
-                                    value=ast.Name(id='qubits', ctx=ast.Load()),
-                                    slice=ast.Constant(i),
-                                    ctx=ast.Load()
-                                )],
-                                keywords=[]
-                            )
-                        ) for i in range(5)],
-                        # CZ(0,1)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='cz', ctx=ast.Load()),
-                                args=[
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(0),
-                                                  ctx=ast.Load()),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(1),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # T gates on 2, 3, 4
-                        *[ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='t', ctx=ast.Load()),
-                                args=[ast.Subscript(
-                                    value=ast.Name(id='qubits', ctx=ast.Load()),
-                                    slice=ast.Constant(i),
-                                    ctx=ast.Load()
-                                )],
-                                keywords=[]
-                            )
-                        ) for i in [2, 3, 4]],
-                        # CZ(0,2)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='cz', ctx=ast.Load()),
-                                args=[
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(0),
-                                                  ctx=ast.Load()),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(2),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # RX(pi/2, qubit 4)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='rx', ctx=ast.Load()),
-                                args=[
-                                    ast.BinOp(
-                                        left=ast.Attribute(
-                                            value=ast.Name(id='math',
-                                                           ctx=ast.Load()),
-                                            attr='pi', ctx=ast.Load()),
-                                        op=ast.Div(),
-                                        right=ast.Constant(value=2)
-                                    ),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(4),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # RX(pi/2, qubit 0), RX(pi/2, qubit 1)
-                        *[ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='rx', ctx=ast.Load()),
-                                args=[
-                                    ast.BinOp(
-                                        left=ast.Attribute(
-                                            value=ast.Name(id='math',
-                                                           ctx=ast.Load()),
-                                            attr='pi', ctx=ast.Load()),
-                                        op=ast.Div(),
-                                        right=ast.Constant(value=2)
-                                    ),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(i),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ) for i in [0, 1]],
-                        # CZ(2,4)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='cz', ctx=ast.Load()),
-                                args=[
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(2),
-                                                  ctx=ast.Load()),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(4),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # T gates on 0 and 1
-                        *[ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='t', ctx=ast.Load()),
-                                args=[ast.Subscript(
-                                    value=ast.Name(id='qubits', ctx=ast.Load()),
-                                    slice=ast.Constant(i),
-                                    ctx=ast.Load()
-                                )],
-                                keywords=[]
-                            )
-                        ) for i in [0, 1]],
-                        # CZ(2,3)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='cz', ctx=ast.Load()),
-                                args=[
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(2),
-                                                  ctx=ast.Load()),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(3),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # RX(pi/2, 4)
-                        ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='rx', ctx=ast.Load()),
-                                args=[
-                                    ast.BinOp(
-                                        left=ast.Attribute(
-                                            value=ast.Name(id='math',
-                                                           ctx=ast.Load()),
-                                            attr='pi', ctx=ast.Load()),
-                                        op=ast.Div(),
-                                        right=ast.Constant(value=2)
-                                    ),
-                                    ast.Subscript(value=ast.Name(id='qubits',
-                                                                 ctx=ast.Load()),
-                                                  slice=ast.Constant(4),
-                                                  ctx=ast.Load())
-                                ],
-                                keywords=[]
-                            )
-                        ),
-                        # Final H gates
-                        *[ast.Expr(
-                            value=ast.Call(
-                                func=ast.Name(id='h', ctx=ast.Load()),
-                                args=[ast.Subscript(
-                                    value=ast.Name(id='qubits', ctx=ast.Load()),
-                                    slice=ast.Constant(i),
-                                    ctx=ast.Load()
-                                )],
-                                keywords=[]
-                            )
-                        ) for i in range(5)]
-                    ],
-                    decorator_list=[
-                    ],
+                    body=body,
+                    decorator_list=[],
                     returns=None,
-                    type_comment=None
+                    type_comment=None,
                 )
             ],
-            type_ignores=[]
+            type_ignores=[],
         )

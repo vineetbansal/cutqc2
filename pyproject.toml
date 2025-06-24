@@ -37,6 +37,5 @@ package-dir = {"" = "src"}
 testpaths = ["tests"]
 addopts = "-sv"
 
-[tool.ruff.per-file-ignores]
-# CudaQ kernels by convention pick up gates magically - h(), x() etc.
-"tests/conftest.py" = ["F821"]
+[tool.ruff]
+exclude = ["src/cudaqut/cutqc/**"]
