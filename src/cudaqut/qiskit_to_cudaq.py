@@ -44,8 +44,9 @@ class Kernel:
             "cz": "cz",
         }
 
-        def single_qubit_gate(gate: str,
-                              instr: "qiskit._accelerate.circuit.CircuitInstruction") -> ast.Expr:  # TODO: avoid using private API
+        def single_qubit_gate(qc: qiskit.QuantumCircuit,
+                              gate: str,
+                              instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction) -> ast.Expr:
 
             params = []
             for param in instr.params:
@@ -53,8 +54,11 @@ class Kernel:
                     ast.Constant(param)
                 )
 
-            qubit_index = instr.qubits[
-                0]._index  # TODO: avoid using private API
+            # TODO: It would be nice to obtain the index from the Qubit object
+            # itself, but there seems to be no way other than to reach for
+            # the private `._index` attribute.
+            qubit_index = qc.qubits.index(instr.qubits[0])
+
             return ast.Expr(
                 value=ast.Call(
                     func=ast.Name(
@@ -72,11 +76,17 @@ class Kernel:
                 )
             )
 
-        def multi_qubit_gate(gate: str,
-                             instr: "qiskit._accelerate.circuit.CircuitInstruction") -> ast.Expr:  # TODO: avoid using private API
+        def multi_qubit_gate(qc: qiskit.QuantumCircuit,
+                             gate: str,
+                             instr: qiskit.circuit.quantumcircuitdata.CircuitInstruction) -> ast.Expr:
             assert len(
                 instr.qubits) == 2, "Only two-qubit multi-qubit gates are supported for now"
-            from_qubit_index, to_qubit_index = instr.qubits[0]._index, instr.qubits[1]._index  # TODO: avoid using private API
+
+            # TODO: It would be nice to obtain the index from the Qubit object
+            # itself, but there seems to be no way other than to reach for
+            # the private `._index` attribute.
+            from_qubit_index = qc.qubits.index(instr.qubits[0])
+            to_qubit_index = qc.qubits.index(instr.qubits[1])
 
             return ast.Expr(
                 value=ast.Call(
@@ -119,11 +129,11 @@ class Kernel:
                 continue  # TODO: Handle these!
             elif instr_name in single_qubit_gate_mapping:
                 body.append(
-                    single_qubit_gate(instr_name, instr)
+                    single_qubit_gate(qc, instr_name, instr)
                 )
             elif instr_name in multi_qubit_gate_mapping:
                 body.append(
-                    multi_qubit_gate(instr_name, instr)
+                    multi_qubit_gate(qc, instr_name, instr)
                 )
             else:
                 raise NotImplementedError(f"Unsupported gate: {instr_name}")
