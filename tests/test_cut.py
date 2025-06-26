@@ -1,6 +1,6 @@
 from qiskit import QuantumCircuit
 from qiskit.primitives import StatevectorSampler
-from cudaqut.cutqc.cutqc.main import CutQC
+from cutqc2.cutqc.cutqc.main import CutQC
 
 
 def print_counts(circuit, shots=1000):
