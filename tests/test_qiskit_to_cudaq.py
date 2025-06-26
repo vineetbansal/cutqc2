@@ -1,7 +1,7 @@
 import textwrap
 import cudaq
 from qiskit.primitives import StatevectorSampler
-from cudaqut.qiskit_to_cudaq import Kernel
+from cutqc2.qiskit_to_cudaq import Kernel
 
 
 def normalize(counts):
