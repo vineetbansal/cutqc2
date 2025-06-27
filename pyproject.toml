@@ -1,7 +1,7 @@
 [project]
-name = "cudaqut"
+name = "cutqc2"
 version = "0.0.1"
-description = "CutQC on CudaQ"
+description = "Quantum Circuit Cutting and Reconstruction"
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -38,4 +38,4 @@ testpaths = ["tests"]
 addopts = "-sv"
 
 [tool.ruff]
-exclude = ["src/cudaqut/cutqc/**"]
+exclude = ["src/cutqc2/cutqc/**"]
