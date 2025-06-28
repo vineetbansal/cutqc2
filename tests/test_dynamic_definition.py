@@ -10,7 +10,7 @@ class ComputeGraph:
     """
 
     # Simulating 2 subcircuits with these no. of wires
-    s0_wires = 14
+    s0_wires = 12
     s1_wires = 15
 
     def __init__(self):
@@ -41,8 +41,13 @@ class ComputeGraph:
                 0,  # from subcircuit 0
                 1,  # to subcircuit 1
                 {
-                    "O_qubit": Qubit(QuantumRegister(10, "q"), 9),
-                    "rho_qubit": Qubit(QuantumRegister(14, "q"), 0),
+                    # The format for Qubit is ((<n_wires>, <prefix>), <wire_index>)
+                    "O_qubit": Qubit(
+                        QuantumRegister(12, "q"), 11
+                    ),  # cut wire w.r.t subcircuit 0
+                    "rho_qubit": Qubit(
+                        QuantumRegister(15, "q"), 0
+                    ),  # cut wire w.r.t subcircuit 1
                 },
             )
         ]
