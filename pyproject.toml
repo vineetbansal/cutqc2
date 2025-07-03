@@ -2,10 +2,10 @@
 name = "cutqc2"
 version = "0.0.1"
 description = "Quantum Circuit Cutting and Reconstruction"
+license = "MIT"
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
@@ -28,6 +28,17 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>6"
+]
+docs = [
+    "sphinx",
+    "myst-parser",
+    "sphinx-autodoc-typehints",
+    "nbsphinx",
+    "sphinx-gallery",
+    "sphinx-rtd-theme",
+    "sphinx-autodoc-annotation",
+    "jupyterlab",
+    "plotly",
 ]
 
 [tool.setuptools]
