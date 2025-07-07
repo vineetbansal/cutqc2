@@ -2,21 +2,6 @@ import itertools, copy, math
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 
 
-def get_cut_qubit_pairs(complete_path_map):
-    """
-    Get O-Rho cut qubit pairs
-    """
-    O_rho_pairs = []
-    for input_qubit in complete_path_map:
-        path = complete_path_map[input_qubit]
-        if len(path) > 1:
-            for path_ctr, item in enumerate(path[:-1]):
-                O_qubit_tuple = item
-                rho_qubit_tuple = path[path_ctr + 1]
-                O_rho_pairs.append((O_qubit_tuple, rho_qubit_tuple))
-    return O_rho_pairs
-
-
 def get_reconstruction_qubit_order(full_circuit, complete_path_map, subcircuits):
     """
     Get the output qubit in the full circuit for each subcircuit

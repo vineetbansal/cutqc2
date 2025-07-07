@@ -11,7 +11,6 @@ class CutSolution:
 
         self.get_pairs()
         self.get_counter()
-
         self.generate_metadata()
 
     def generate_metadata(self):
@@ -98,8 +97,8 @@ class CutSolution:
                         )
 
                 subcircuit_instance_init_meas = self.get_instance_init_meas(
-                    init_label=subcircuit_entry_init,
-                    meas_label=subcircuit_entry_meas
+                    initializations=subcircuit_entry_init,
+                    measurements=subcircuit_entry_meas
                 )
                 subcircuit_entry_term = []
                 for init_meas in subcircuit_instance_init_meas:
@@ -124,29 +123,28 @@ class CutSolution:
                 ] = subcircuit_entry_term
         return subcircuit_entries, subcircuit_instances
 
-    def get_instance_init_meas(self, init_label, meas_label):
-        """
-        Convert subcircuit entry init,meas into subcircuit instance init,meas
-        """
+    def get_instance_init_meas(self, initializations, measurements):
         init_combinations = []
-        for x in init_label:
-            if x == "zero":
-                init_combinations.append(["zero"])
-            elif x == "I":
-                init_combinations.append(["+zero", "+one"])
-            elif x == "X":
-                init_combinations.append(["2plus", "-zero", "-one"])
-            elif x == "Y":
-                init_combinations.append(["2plusI", "-zero", "-one"])
-            elif x == "Z":
-                init_combinations.append(["+zero", "-one"])
-            else:
-                raise Exception("Illegal initilization symbol :", x)
+        for initialization in initializations:
+            match initialization:
+                case "zero":
+                    init_combinations.append(["zero"])
+                case "I":
+                    init_combinations.append(["+zero", "+one"])
+                case "X":
+                    init_combinations.append(["2plus", "-zero", "-one"])
+                case "Y":
+                    init_combinations.append(["2plusI", "-zero", "-one"])
+                case "Z":
+                    init_combinations.append(["+zero", "-one"])
+                case _:
+                    raise Exception("Illegal initialization symbol :", initialization)
+
         init_combinations = list(itertools.product(*init_combinations))
 
         subcircuit_init_meas = []
         for init in init_combinations:
-            subcircuit_init_meas.append((tuple(init), tuple(meas_label)))
+            subcircuit_init_meas.append((tuple(init), tuple(measurements)))
         return subcircuit_init_meas
 
     def convert_to_physical_init(self, init):
