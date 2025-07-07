@@ -4,6 +4,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 import gurobipy as gp
 import math, logging
 from qiskit import QuantumCircuit, QuantumRegister
+from cutqc2.cutqc.cutqc.cut_solution import CutSolution
 
 
 class MIP_Model(object):
@@ -595,14 +596,6 @@ def get_counter(subcircuits, O_rho_pairs):
         counter[O_qubit["subcircuit_idx"]]["O"] += 1
         counter[rho_qubit["subcircuit_idx"]]["rho"] += 1
     return counter
-
-
-class CutSolution:
-    def __init__(self, *, subcircuits, complete_path_map, num_cuts, counter):
-        self.subcircuits = subcircuits
-        self.complete_path_map = complete_path_map
-        self.num_cuts = num_cuts
-        self.counter = counter
 
 
 def find_cuts(
