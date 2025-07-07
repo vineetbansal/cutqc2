@@ -4,11 +4,13 @@ from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 
 
 class CutSolution:
-    def __init__(self, *, subcircuits, complete_path_map, num_cuts, counter):
+    def __init__(self, *, subcircuits, complete_path_map, num_cuts):
         self.subcircuits = subcircuits
         self.complete_path_map = complete_path_map
         self.num_cuts = num_cuts
-        self.counter = counter
+
+        self.get_pairs()
+        self.get_counter()
 
         self.generate_metadata()
 
@@ -171,3 +173,32 @@ class CutSolution:
             else:
                 raise Exception("Illegal initilization symbol :", x)
         return coefficient, tuple(init)
+
+    def get_pairs(self):
+        O_rho_pairs = []
+        for input_qubit in self.complete_path_map:
+            path = self.complete_path_map[input_qubit]
+            if len(path) > 1:
+                for path_ctr, item in enumerate(path[:-1]):
+                    O_qubit_tuple = item
+                    rho_qubit_tuple = path[path_ctr + 1]
+                    O_rho_pairs.append((O_qubit_tuple, rho_qubit_tuple))
+        self.O_rho_pairs = O_rho_pairs
+
+    def get_counter(self):
+        counter = {}
+        for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
+            counter[subcircuit_idx] = {
+                "effective": subcircuit.num_qubits,
+                "rho": 0,
+                "O": 0,
+                "d": subcircuit.num_qubits,
+                "depth": subcircuit.depth(),
+                "size": subcircuit.size(),
+            }
+        for pair in self.O_rho_pairs:
+            O_qubit, rho_qubit = pair
+            counter[O_qubit["subcircuit_idx"]]["effective"] -= 1
+            counter[O_qubit["subcircuit_idx"]]["O"] += 1
+            counter[rho_qubit["subcircuit_idx"]]["rho"] += 1
+        self.counter = counter

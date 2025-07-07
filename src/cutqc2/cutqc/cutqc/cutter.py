@@ -567,37 +567,6 @@ def circuit_stripping(circuit):
     return dag_to_circuit(stripped_dag)
 
 
-def get_pairs(complete_path_map):
-    O_rho_pairs = []
-    for input_qubit in complete_path_map:
-        path = complete_path_map[input_qubit]
-        if len(path) > 1:
-            for path_ctr, item in enumerate(path[:-1]):
-                O_qubit_tuple = item
-                rho_qubit_tuple = path[path_ctr + 1]
-                O_rho_pairs.append((O_qubit_tuple, rho_qubit_tuple))
-    return O_rho_pairs
-
-
-def get_counter(subcircuits, O_rho_pairs):
-    counter = {}
-    for subcircuit_idx, subcircuit in enumerate(subcircuits):
-        counter[subcircuit_idx] = {
-            "effective": subcircuit.num_qubits,
-            "rho": 0,
-            "O": 0,
-            "d": subcircuit.num_qubits,
-            "depth": subcircuit.depth(),
-            "size": subcircuit.size(),
-        }
-    for pair in O_rho_pairs:
-        O_qubit, rho_qubit = pair
-        counter[O_qubit["subcircuit_idx"]]["effective"] -= 1
-        counter[O_qubit["subcircuit_idx"]]["O"] += 1
-        counter[rho_qubit["subcircuit_idx"]]["rho"] += 1
-    return counter
-
-
 def find_cuts(
     circuit,
     max_subcircuit_width,
@@ -640,38 +609,14 @@ def find_cuts(
             subcircuits, complete_path_map = subcircuits_parser(
                 subcircuit_gates=mip_model.subcircuits, circuit=circuit
             )
-            O_rho_pairs = get_pairs(complete_path_map=complete_path_map)
-            counter = get_counter(subcircuits=subcircuits, O_rho_pairs=O_rho_pairs)
 
             cut_solution = CutSolution(
                 subcircuits=subcircuits,
                 complete_path_map=complete_path_map,
-                num_cuts=len(positions),
-                counter=counter,
+                num_cuts=len(positions)
             )
             return cut_solution
 
     if raise_error:
         raise RuntimeError("No viable cuts found")
     return None
-
-
-def log_cutter_result(num_cuts, subcircuits, counter):
-    logging.info("Cutter result:")
-    logging.info(f"{len(subcircuits)} subcircuits, {num_cuts} cuts")
-
-    for subcircuit_idx in range(len(subcircuits)):
-        subcircuit_info = f"subcircuit {subcircuit_idx}\n"
-        subcircuit_info += (
-            "\u03C1 qubits = %d, O qubits = %d, width = %d, effective = %d, depth = %d, size = %d\n"
-            % (
-                counter[subcircuit_idx]["rho"],
-                counter[subcircuit_idx]["O"],
-                counter[subcircuit_idx]["d"],
-                counter[subcircuit_idx]["effective"],
-                counter[subcircuit_idx]["depth"],
-                counter[subcircuit_idx]["size"],
-            )
-        )
-        subcircuit_info += f"{subcircuits[subcircuit_idx]}"
-        logging.info(subcircuit_info)
