@@ -3,10 +3,6 @@ from copy import deepcopy
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 
 
-class AnnotatedSubcircuit:
-    pass
-
-
 class CutSolution:
     def __init__(self, *, subcircuits, complete_path_map, num_cuts):
         self.subcircuits = subcircuits
@@ -176,11 +172,6 @@ class CutSolution:
         for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
             self.annotated_subcircuits[subcircuit_idx] = {
                 "effective": subcircuit.num_qubits,
-                "rho": 0,
-                "O": 0,
-                "d": subcircuit.num_qubits,
-                "depth": subcircuit.depth(),
-                "size": subcircuit.size(),
             }
 
         for input_qubit, path in self.complete_path_map.items():
@@ -191,5 +182,3 @@ class CutSolution:
                     to_subcircuit_index = rho_qubit["subcircuit_idx"]
 
                     self.annotated_subcircuits[from_subcircuit_index]["effective"] -= 1
-                    self.annotated_subcircuits[from_subcircuit_index]["O"] += 1
-                    self.annotated_subcircuits[to_subcircuit_index]["rho"] += 1
