@@ -53,12 +53,6 @@ class CutQC:
         Else supply the subcircuit_vertices manually
         Note that supplying subcircuit_vertices overrides all other arguments
         """
-        if self.verbose:
-            logging.info("*" * 20 + "Cut" + "*" * 20)
-            logging.info(
-                f"width = {self.circuit.num_qubits} depth = {self.circuit.depth()} size = {self.circuit.num_nonlocal_gates()} -->"
-            )
-            logging.info(self.cutter_constraints)
         cutter_begin = perf_counter()
 
         cut_solution = find_cuts(
@@ -76,12 +70,6 @@ class CutQC:
                     self.cut_solution.complete_path_map,
                 )
             )
-            if self.verbose:
-                logging.info("--> subcircuit_entries:")
-                for subcircuit_idx in self.subcircuit_entries:
-                    logging.info(
-                        f"Subcircuit_{subcircuit_idx} has {len(self.subcircuit_entries[subcircuit_idx])} entries"
-                    )
             self.times["cutter"] = perf_counter() - cutter_begin
 
 
@@ -89,13 +77,6 @@ class CutQC:
         """
         num_shots_fn: a function that gives the number of shots to take for a given circuit
         """
-        if self.verbose:
-            logging.info(
-                "*" * 20
-                + f"evaluate subcircuits with shots {num_shots_fn is not None}"
-                + "*" * 20
-            )
-
         evaluate_begin = perf_counter()
         self.subcircuit_entry_probs = {}
         for subcircuit_index in range(len(self.cut_solution.subcircuits)):
@@ -112,16 +93,11 @@ class CutQC:
             )
         eval_time = perf_counter() - evaluate_begin
         self.times["evaluate"] = eval_time
-        if self.verbose:
-            logging.info(f"evaluate took {eval_time} seconds")
 
     def build(self, mem_limit, recursion_depth):
         """
         mem_limit: memory limit during post process. 2^mem_limit is the largest vector
         """
-        if self.verbose:
-            logging.info("--> Reconstruct")
-
         # Keep these times and discard the rest
         self.times = {
             "cutter": self.times["cutter"],
