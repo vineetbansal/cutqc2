@@ -4,7 +4,7 @@ from time import perf_counter
 from cutqc2.cutqc.cutqc.helper_fun import check_valid, add_times
 from cutqc2.cutqc.cutqc.cutter import find_cuts
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
-from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition, full_verify
+from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
 
 
 class CutQC:
@@ -104,13 +104,7 @@ class CutQC:
         self.times["build"] -= self.times["merge_states_into_bins"]
 
     def verify(self):
-        verify_begin = perf_counter()
-        reconstructed_prob, self.approximation_error = full_verify(
-            full_circuit=self.circuit,
-            complete_path_map=self.cut_solution.complete_path_map,
-            subcircuits=self.cut_solution.subcircuits,
+        reconstructed_prob, self.approximation_error = self.cut_solution.full_verify(
             dd_bins=self.approximation_bins,
         )
-        verify_time = perf_counter() - verify_begin
-        logging.info(f"verify took {verify_time}. error = {self.approximation_error}.")
 

@@ -2,13 +2,9 @@ import itertools, copy, pickle, subprocess, logging
 from time import perf_counter
 import numpy as np
 
-from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
-from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
-from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.cutqc.cutqc.evaluator import get_num_workers
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
 from cutqc2.cutqc.cutqc.helper_fun import add_times
-from cutqc2.cutqc.cutqc.post_process_helper import get_reconstruction_qubit_order
 
 
 class DynamicDefinition(object):
@@ -274,27 +270,6 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
                     full_state_idx = int(full_state, 2)
                     reconstructed_prob[full_state_idx] = average_state_prob
     return reconstructed_prob
-
-
-def full_verify(full_circuit, complete_path_map, subcircuits, dd_bins):
-    ground_truth = evaluate_circ(circuit=full_circuit, backend="statevector_simulator")
-    subcircuit_out_qubits = get_reconstruction_qubit_order(
-        full_circuit=full_circuit,
-        complete_path_map=complete_path_map,
-        subcircuits=subcircuits,
-    )
-    reconstructed_prob = read_dd_bins(
-        subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=dd_bins
-    )
-    real_probability = quasi_to_real(
-        quasiprobability=reconstructed_prob, mode="nearest"
-    )
-    approximation_error = (
-        MSE(target=ground_truth, obs=real_probability)
-        * 2**full_circuit.num_qubits
-        / np.linalg.norm(ground_truth) ** 2
-    )
-    return reconstructed_prob, approximation_error
 
 
 def merge_prob_vector(unmerged_prob_vector, qubit_states):

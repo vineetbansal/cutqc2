@@ -611,6 +611,7 @@ def find_cuts(
             )
 
             cut_solution = CutSolution(
+                circuit=circuit,
                 subcircuits=subcircuits,
                 complete_path_map=complete_path_map,
                 num_cuts=len(positions)

@@ -1,10 +1,17 @@
 import itertools
 from copy import deepcopy
+import numpy as np
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
+from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
+from cutqc2.cutqc.cutqc.post_process_helper import get_reconstruction_qubit_order
+from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
+from cutqc2.cutqc.helper_functions.metrics import MSE
+from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins
 
 
 class CutSolution:
-    def __init__(self, *, subcircuits, complete_path_map, num_cuts):
+    def __init__(self, *, circuit, subcircuits, complete_path_map, num_cuts):
+        self.circuit = circuit
         self.subcircuits = subcircuits
         self.complete_path_map = complete_path_map
         self.num_cuts = num_cuts
@@ -188,3 +195,23 @@ class CutSolution:
                     to_subcircuit_index = rho_qubit["subcircuit_idx"]
 
                     self.annotated_subcircuits[from_subcircuit_index]["effective"] -= 1
+
+    def full_verify(self, dd_bins):
+        ground_truth = evaluate_circ(circuit=self.circuit, backend="statevector_simulator")
+        subcircuit_out_qubits = get_reconstruction_qubit_order(
+            full_circuit=self.circuit,
+            complete_path_map=self.complete_path_map,
+            subcircuits=self.subcircuits,
+        )
+        reconstructed_prob = read_dd_bins(
+            subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=dd_bins
+        )
+        real_probability = quasi_to_real(
+            quasiprobability=reconstructed_prob, mode="nearest"
+        )
+        approximation_error = (
+            MSE(target=ground_truth, obs=real_probability)
+            * 2**self.circuit.num_qubits
+            / np.linalg.norm(ground_truth) ** 2
+        )
+        return reconstructed_prob, approximation_error
