@@ -14,8 +14,14 @@ class CutSolution:
         self.populate_compute_graph()
         self.populate_subcircuit_entries()
 
+    def __len__(self):
+        return len(self.subcircuits)
+
     def __iter__(self):
         return iter(self.subcircuits)
+
+    def __getitem__(self, item):
+        return self.subcircuits[item]
 
     def populate_compute_graph(self):
         """

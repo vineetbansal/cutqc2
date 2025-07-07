@@ -61,9 +61,9 @@ class CutQC:
         """
         evaluate_begin = perf_counter()
         self.subcircuit_entry_probs = {}
-        for subcircuit_index in range(len(self.cut_solution.subcircuits)):
+        for subcircuit_index in range(len(self.cut_solution)):
             subcircuit_measured_probs = run_subcircuit_instances(
-                subcircuit=self.cut_solution.subcircuits[subcircuit_index],
+                subcircuit=self.cut_solution[subcircuit_index],
                 subcircuit_instance_init_meas=self.subcircuit_instances[
                     subcircuit_index
                 ],
