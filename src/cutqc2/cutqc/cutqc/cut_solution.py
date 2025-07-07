@@ -8,16 +8,16 @@ class CutSolution:
         self.subcircuits = subcircuits
         self.complete_path_map = complete_path_map
         self.num_cuts = num_cuts
-        self.counter = {}  # populated by `get_counter()`
+        self.counter = {}  # populated by `populate_counter()`
 
-        self.get_counter()
-        self.generate_compute_graph()
-        self.subcircuit_entries, self.subcircuit_instances = self.generate_subcircuit_entries()
+        self.populate_counter()
+        self.populate_compute_graph()
+        self.populate_subcircuit_entries()
 
     def __iter__(self):
         return iter(self.subcircuits)
 
-    def generate_compute_graph(self):
+    def populate_compute_graph(self):
         """
         Generate the connection graph among subcircuits
         """
@@ -47,12 +47,13 @@ class CutSolution:
                 )
         self.compute_graph = compute_graph
 
-    def generate_subcircuit_entries(self):
+    def populate_subcircuit_entries(self):
 
         compute_graph = self.compute_graph
 
         subcircuit_entries = {}
         subcircuit_instances = {}
+
         for subcircuit_idx in compute_graph.nodes:
             bare_subcircuit = compute_graph.nodes[subcircuit_idx]["subcircuit"]
             subcircuit_entries[subcircuit_idx] = {}
@@ -65,7 +66,6 @@ class CutSolution:
             for subcircuit_edge_bases in itertools.product(
                     ["I", "X", "Y", "Z"], repeat=len(subcircuit_edges)
             ):
-                # print('subcircuit_edge_bases =',subcircuit_edge_bases)
                 subcircuit_entry_init = ["zero"] * bare_subcircuit.num_qubits
                 subcircuit_entry_meas = ["comp"] * bare_subcircuit.num_qubits
                 for edge_basis, edge in zip(subcircuit_edge_bases,
@@ -116,7 +116,8 @@ class CutSolution:
                     (
                     tuple(subcircuit_entry_init), tuple(subcircuit_entry_meas))
                 ] = subcircuit_entry_term
-        return subcircuit_entries, subcircuit_instances
+
+        self.subcircuit_entries, self.subcircuit_instances = subcircuit_entries, subcircuit_instances
 
     def get_instance_init_meas(self, initializations, measurements):
         init_combinations = []
@@ -167,7 +168,7 @@ class CutSolution:
                 raise Exception("Illegal initilization symbol :", x)
         return coefficient, tuple(init)
 
-    def get_counter(self):
+    def populate_counter(self):
         for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
             self.counter[subcircuit_idx] = {
                 "effective": subcircuit.num_qubits,
