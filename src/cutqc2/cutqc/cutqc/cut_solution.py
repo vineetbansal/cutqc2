@@ -11,20 +11,20 @@ class CutSolution:
         self.counter = {}  # populated by `get_counter()`
 
         self.get_counter()
-        self.generate_metadata()
+        self.generate_compute_graph()
+        self.subcircuit_entries, self.subcircuit_instances = self.generate_subcircuit_entries()
 
-    def generate_metadata(self):
-        self.compute_graph = self.generate_compute_graph(
-            counter=self.counter,
-            subcircuits=self.subcircuits,
-            complete_path_map=self.complete_path_map,
-        )
-        self.subcircuit_entries, self.subcircuit_instances = self.generate_subcircuit_entries(compute_graph=self.compute_graph)
+    def __iter__(self):
+        return iter(self.subcircuits)
 
-    def generate_compute_graph(self, counter, subcircuits, complete_path_map):
+    def generate_compute_graph(self):
         """
         Generate the connection graph among subcircuits
         """
+        counter = self.counter
+        subcircuits = self.subcircuits
+        complete_path_map = self.complete_path_map
+
         compute_graph = ComputeGraph()
         for subcircuit_idx in counter:
             subcircuit_attributes = deepcopy(counter[subcircuit_idx])
@@ -45,9 +45,12 @@ class CutSolution:
                         "rho_qubit": path[counter + 1]["subcircuit_qubit"],
                     },
                 )
-        return compute_graph
+        self.compute_graph = compute_graph
 
-    def generate_subcircuit_entries(self, compute_graph):
+    def generate_subcircuit_entries(self):
+
+        compute_graph = self.compute_graph
+
         subcircuit_entries = {}
         subcircuit_instances = {}
         for subcircuit_idx in compute_graph.nodes:
