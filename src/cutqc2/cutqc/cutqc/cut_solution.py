@@ -48,13 +48,6 @@ class CutSolution:
         return compute_graph
 
     def generate_subcircuit_entries(self, compute_graph):
-        """
-        subcircuit_entries[subcircuit_idx][entry_init, entry_meas] = subcircuit_entry_term
-        subcircuit_entry_term (list): (coefficient, instance_init, instance_meas)
-        subcircuit_entry = Sum(coefficient*subcircuit_instance)
-
-        subcircuit_instances[subcircuit_idx] = [(instance_init,instance_meas)]
-        """
         subcircuit_entries = {}
         subcircuit_instances = {}
         for subcircuit_idx in compute_graph.nodes:
@@ -116,7 +109,6 @@ class CutSolution:
                     subcircuit_entry_term.append(
                         (coefficient, (instance_init, instance_meas))
                     )
-                    # print('%d *'%coefficient, instance_init, instance_meas)
                 subcircuit_entries[subcircuit_idx][
                     (
                     tuple(subcircuit_entry_init), tuple(subcircuit_entry_meas))
