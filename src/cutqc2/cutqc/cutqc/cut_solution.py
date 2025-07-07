@@ -8,6 +8,7 @@ class CutSolution:
         self.subcircuits = subcircuits
         self.complete_path_map = complete_path_map
         self.num_cuts = num_cuts
+        self.counter = {}  # populated by `get_counter()`
 
         self.get_counter()
         self.generate_metadata()
@@ -164,9 +165,8 @@ class CutSolution:
         return coefficient, tuple(init)
 
     def get_counter(self):
-        counter = {}
         for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
-            counter[subcircuit_idx] = {
+            self.counter[subcircuit_idx] = {
                 "effective": subcircuit.num_qubits,
                 "rho": 0,
                 "O": 0,
@@ -175,18 +175,13 @@ class CutSolution:
                 "size": subcircuit.size(),
             }
 
-        O_rho_pairs = []
-        for input_qubit in self.complete_path_map:
-            path = self.complete_path_map[input_qubit]
+        for input_qubit, path in self.complete_path_map.items():
             if len(path) > 1:
-                for path_ctr, item in enumerate(path[:-1]):
-                    O_qubit_tuple = item
-                    rho_qubit_tuple = path[path_ctr + 1]
-                    O_rho_pairs.append((O_qubit_tuple, rho_qubit_tuple))
+                for j, O_qubit in enumerate(path[:-1]):
+                    rho_qubit = path[j + 1]
+                    from_subcircuit_index = O_qubit["subcircuit_idx"]
+                    to_subcircuit_index = rho_qubit["subcircuit_idx"]
 
-        for pair in O_rho_pairs:
-            O_qubit, rho_qubit = pair
-            counter[O_qubit["subcircuit_idx"]]["effective"] -= 1
-            counter[O_qubit["subcircuit_idx"]]["O"] += 1
-            counter[rho_qubit["subcircuit_idx"]]["rho"] += 1
-        self.counter = counter
+                    self.counter[from_subcircuit_index]["effective"] -= 1
+                    self.counter[from_subcircuit_index]["O"] += 1
+                    self.counter[to_subcircuit_index]["rho"] += 1
