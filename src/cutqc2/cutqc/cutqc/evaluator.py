@@ -18,7 +18,7 @@ def get_num_workers(num_jobs, ram_required_per_worker):
     return num_workers
 
 
-def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, num_shots_fn):
+def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, num_shots_fn=None):
     """
     subcircuit_instance_probs[(instance_init,instance_meas)] = measured probability
     """
