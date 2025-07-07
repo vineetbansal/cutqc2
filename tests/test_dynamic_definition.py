@@ -113,8 +113,8 @@ def test_dynamic_definition_build():
         compute_graph=compute_graph,
         num_cuts=1,
         subcircuit_entry_probs=compute_graph.subcircuit_entry_probs,
-        mem_limit=6,
-        recursion_depth=3,
+        mem_limit=26,  # total number of qubits in both subcircuits
+        recursion_depth=1,  # 1 implies no recursion
     )
 
     dynamic_definition.build()

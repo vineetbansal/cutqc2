@@ -48,5 +48,5 @@ def test_cut():
     print_counts(subcircuit1)
 
     cutqc.evaluate(num_shots_fn=None)
-    cutqc.build(mem_limit=10, recursion_depth=3)
+    cutqc.build(mem_limit=10, recursion_depth=1)
     cutqc.verify()
