@@ -3,14 +3,18 @@ from copy import deepcopy
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 
 
+class AnnotatedSubcircuit:
+    pass
+
+
 class CutSolution:
     def __init__(self, *, subcircuits, complete_path_map, num_cuts):
         self.subcircuits = subcircuits
         self.complete_path_map = complete_path_map
         self.num_cuts = num_cuts
-        self.counter = {}  # populated by `populate_counter()`
+        self.annotated_subcircuits = {}  # populated by `populate_annotated_subcircuits()`
 
-        self.populate_counter()
+        self.populate_annotated_subcircuits()
         self.populate_compute_graph()
         self.populate_subcircuit_entries()
 
@@ -21,13 +25,13 @@ class CutSolution:
         """
         Generate the connection graph among subcircuits
         """
-        counter = self.counter
+        annotated_subcircuits = self.annotated_subcircuits
         subcircuits = self.subcircuits
         complete_path_map = self.complete_path_map
 
         compute_graph = ComputeGraph()
-        for subcircuit_idx in counter:
-            subcircuit_attributes = deepcopy(counter[subcircuit_idx])
+        for subcircuit_idx in annotated_subcircuits:
+            subcircuit_attributes = deepcopy(annotated_subcircuits[subcircuit_idx])
             subcircuit_attributes["subcircuit"] = subcircuits[subcircuit_idx]
             compute_graph.add_node(
                 subcircuit_idx=subcircuit_idx, attributes=subcircuit_attributes
@@ -168,9 +172,9 @@ class CutSolution:
                 raise Exception("Illegal initilization symbol :", x)
         return coefficient, tuple(init)
 
-    def populate_counter(self):
+    def populate_annotated_subcircuits(self):
         for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
-            self.counter[subcircuit_idx] = {
+            self.annotated_subcircuits[subcircuit_idx] = {
                 "effective": subcircuit.num_qubits,
                 "rho": 0,
                 "O": 0,
@@ -186,6 +190,6 @@ class CutSolution:
                     from_subcircuit_index = O_qubit["subcircuit_idx"]
                     to_subcircuit_index = rho_qubit["subcircuit_idx"]
 
-                    self.counter[from_subcircuit_index]["effective"] -= 1
-                    self.counter[from_subcircuit_index]["O"] += 1
-                    self.counter[to_subcircuit_index]["rho"] += 1
+                    self.annotated_subcircuits[from_subcircuit_index]["effective"] -= 1
+                    self.annotated_subcircuits[from_subcircuit_index]["O"] += 1
+                    self.annotated_subcircuits[to_subcircuit_index]["rho"] += 1
