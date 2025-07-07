@@ -597,6 +597,14 @@ def get_counter(subcircuits, O_rho_pairs):
     return counter
 
 
+class CutSolution:
+    def __init__(self, *, subcircuits, complete_path_map, num_cuts, counter):
+        self.subcircuits = subcircuits
+        self.complete_path_map = complete_path_map
+        self.num_cuts = num_cuts
+        self.counter = counter
+
+
 def find_cuts(
     circuit,
     max_subcircuit_width,
@@ -605,7 +613,7 @@ def find_cuts(
     max_subcircuit_cuts,
     subcircuit_size_imbalance,
     verbose,
-):
+) -> CutSolution | None:
     stripped_circ = circuit_stripping(circuit=circuit)
     n_vertices, edges, vertex_ids, id_vertices = read_circ(circuit=stripped_circ)
     num_qubits = circuit.num_qubits
@@ -617,8 +625,6 @@ def find_cuts(
             or num_subcircuit > num_qubits
             or max_cuts + 1 < num_subcircuit
         ):
-            if verbose:
-                logging.info(f"{num_subcircuit} subcircuits : IMPOSSIBLE")
             continue
         kwargs = dict(
             n_vertices=n_vertices,
@@ -643,32 +649,15 @@ def find_cuts(
             O_rho_pairs = get_pairs(complete_path_map=complete_path_map)
             counter = get_counter(subcircuits=subcircuits, O_rho_pairs=O_rho_pairs)
 
-            cut_solution = {
-                "subcircuits": subcircuits,
-                "complete_path_map": complete_path_map,
-                "num_cuts": len(positions),
-                "counter": counter,
-            }
-            break
-        elif verbose:
-            logging.info("%d subcircuits : NO SOLUTIONS" % (num_subcircuit))
-    if verbose and len(cut_solution) > 0:
-        logging.info("-" * 20)
-        log_cutter_result(
-            num_cuts=cut_solution["num_cuts"],
-            subcircuits=cut_solution["subcircuits"],
-            counter=cut_solution["counter"],
-        )
+            cut_solution = CutSolution(
+                subcircuits=subcircuits,
+                complete_path_map=complete_path_map,
+                num_cuts=len(positions),
+                counter=counter,
+            )
+            return cut_solution
 
-        logging.info("Model objective value = %.2e" % (mip_model.objective))
-        logging.info(f"MIP runtime: {mip_model.runtime}")
-
-        if mip_model.optimal:
-            logging.info(f"OPTIMAL, MIP gap = {mip_model.mip_gap}")
-        else:
-            logging.info(f"NOT OPTIMAL, MIP gap = {mip_model.mip_gap}")
-        logging.info("-" * 20)
-    return cut_solution
+    return None
 
 
 def log_cutter_result(num_cuts, subcircuits, counter):

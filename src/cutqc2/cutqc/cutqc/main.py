@@ -60,15 +60,20 @@ class CutQC:
             )
             logging.info(self.cutter_constraints)
         cutter_begin = perf_counter()
-        self.cut_solution = find_cuts(
+
+        cut_solution = find_cuts(
             **self.cutter_constraints, circuit=self.circuit, verbose=self.verbose
         )
-        if "complete_path_map" in self.cut_solution:
+
+        if cut_solution is None:
+            raise RuntimeError("The input circuit and constraints have no viable cuts")
+        else:
+            self.cut_solution = cut_solution
             self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = (
                 _generate_metadata(
-                    self.cut_solution["counter"],
-                    self.cut_solution["subcircuits"],
-                    self.cut_solution["complete_path_map"],
+                    self.cut_solution.counter,
+                    self.cut_solution.subcircuits,
+                    self.cut_solution.complete_path_map,
                 )
             )
             if self.verbose:
@@ -78,13 +83,7 @@ class CutQC:
                         f"Subcircuit_{subcircuit_idx} has {len(self.subcircuit_entries[subcircuit_idx])} entries"
                     )
             self.times["cutter"] = perf_counter() - cutter_begin
-        else:
-            self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = (
-                None,
-                None,
-                None,
-            )
-            raise RuntimeError("The input circuit and constraints have no viable cuts")
+
 
     def evaluate(self, num_shots_fn):
         """
@@ -99,9 +98,9 @@ class CutQC:
 
         evaluate_begin = perf_counter()
         self.subcircuit_entry_probs = {}
-        for subcircuit_index in range(len(self.cut_solution["subcircuits"])):
+        for subcircuit_index in range(len(self.cut_solution.subcircuits)):
             subcircuit_measured_probs = run_subcircuit_instances(
-                subcircuit=self.cut_solution["subcircuits"][subcircuit_index],
+                subcircuit=self.cut_solution.subcircuits[subcircuit_index],
                 subcircuit_instance_init_meas=self.subcircuit_instances[
                     subcircuit_index
                 ],
@@ -132,7 +131,7 @@ class CutQC:
         build_begin = perf_counter()
         dd = DynamicDefinition(
             compute_graph=self.compute_graph,
-            num_cuts=self.cut_solution["num_cuts"],
+            num_cuts=self.cut_solution.num_cuts,
             subcircuit_entry_probs=self.subcircuit_entry_probs,
             mem_limit=mem_limit,
             recursion_depth=recursion_depth,
@@ -150,8 +149,8 @@ class CutQC:
         verify_begin = perf_counter()
         reconstructed_prob, self.approximation_error = full_verify(
             full_circuit=self.circuit,
-            complete_path_map=self.cut_solution["complete_path_map"],
-            subcircuits=self.cut_solution["subcircuits"],
+            complete_path_map=self.cut_solution.complete_path_map,
+            subcircuits=self.cut_solution.subcircuits,
             dd_bins=self.approximation_bins,
         )
         verify_time = perf_counter() - verify_begin

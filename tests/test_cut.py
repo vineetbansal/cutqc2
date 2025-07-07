@@ -41,7 +41,7 @@ def test_cut():
     )
     cutqc.cut()
 
-    subcircuit0, subcircuit1 = cutqc.cut_solution["subcircuits"]
+    subcircuit0, subcircuit1 = cutqc.cut_solution.subcircuits
     print(subcircuit0)
     print_counts(subcircuit0)
     print(subcircuit1)
