@@ -2,15 +2,8 @@ import subprocess, os, logging
 from time import perf_counter
 
 from cutqc2.cutqc.cutqc.helper_fun import check_valid, add_times
-
 from cutqc2.cutqc.cutqc.cutter import find_cuts
-
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
-from cutqc2.cutqc.cutqc.post_process_helper import (
-    generate_subcircuit_entries,
-    generate_compute_graph,
-)
-
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition, full_verify
 
 
@@ -64,7 +57,7 @@ class CutQC:
         else:
             self.cut_solution = cut_solution
             self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = (
-                _generate_metadata(
+                self.cut_solution.generate_metadata(
                     self.cut_solution.counter,
                     self.cut_solution.subcircuits,
                     self.cut_solution.complete_path_map,
@@ -132,16 +125,3 @@ class CutQC:
         verify_time = perf_counter() - verify_begin
         logging.info(f"verify took {verify_time}. error = {self.approximation_error}.")
 
-
-def _generate_metadata(counter, subcircuits, complete_path_map):
-    compute_graph = generate_compute_graph(
-        counter=counter,
-        subcircuits=subcircuits,
-        complete_path_map=complete_path_map,
-    )
-
-    (
-        subcircuit_entries,
-        subcircuit_instances,
-    ) = generate_subcircuit_entries(compute_graph=compute_graph)
-    return compute_graph, subcircuit_entries, subcircuit_instances
