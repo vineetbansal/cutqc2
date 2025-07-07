@@ -20,15 +20,3 @@ def check_valid(circuit):
             raise ValueError("CutQC currently does not support >2-qubit gates")
         if op_node.op.name == "barrier":
             raise ValueError("Please remove barriers from the circuit before cutting")
-
-
-def add_times(times_a, times_b):
-    """
-    Add the two time breakdowns
-    """
-    for field in times_b:
-        if field in times_a:
-            times_a[field] += times_b[field]
-        else:
-            times_a[field] = times_b[field]
-    return times_a

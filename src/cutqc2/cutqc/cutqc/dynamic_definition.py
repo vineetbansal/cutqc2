@@ -4,7 +4,6 @@ import numpy as np
 
 from cutqc2.cutqc.cutqc.evaluator import get_num_workers
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
-from cutqc2.cutqc.cutqc.helper_fun import add_times
 
 
 class DynamicDefinition(object):
@@ -70,7 +69,6 @@ class DynamicDefinition(object):
             )
             reconstructed_prob = graph_contractor.reconstructed_prob
             smart_order = graph_contractor.smart_order
-            self.times = add_times(times_a=self.times, times_b=graph_contractor.times)
 
             self.dd_bins[recursion_layer] = dd_schedule
             self.dd_bins[recursion_layer]["smart_order"] = smart_order

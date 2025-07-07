@@ -1,7 +1,7 @@
 import subprocess, os, logging
 from time import perf_counter
 
-from cutqc2.cutqc.cutqc.helper_fun import check_valid, add_times
+from cutqc2.cutqc.cutqc.helper_fun import check_valid
 from cutqc2.cutqc.cutqc.cutter import find_cuts
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
@@ -77,16 +77,6 @@ class CutQC:
         self.times["evaluate"] = eval_time
 
     def build(self, mem_limit, recursion_depth):
-        """
-        mem_limit: memory limit during post process. 2^mem_limit is the largest vector
-        """
-        # Keep these times and discard the rest
-        self.times = {
-            "cutter": self.times["cutter"],
-            "evaluate": self.times["evaluate"],
-        }
-
-        build_begin = perf_counter()
         dd = DynamicDefinition(
             compute_graph=self.compute_graph,
             num_cuts=self.cut_solution.num_cuts,
@@ -96,12 +86,8 @@ class CutQC:
         )
         dd.build()
 
-        self.times = add_times(times_a=self.times, times_b=dd.times)
         self.approximation_bins = dd.dd_bins
         self.num_recursions = len(self.approximation_bins)
-        self.times["build"] = perf_counter() - build_begin
-        self.times["build"] += self.times["cutter"]
-        self.times["build"] -= self.times["merge_states_into_bins"]
 
     def verify(self):
         reconstructed_prob, self.approximation_error = self.cut_solution.full_verify(
