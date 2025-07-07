@@ -9,4 +9,4 @@ for the paper [CutQC: using small quantum computers for large quantum circuit ev
 CutQC2 cuts a large quantum circuits into smaller subcircuits to run on smaller quantum computers.
 By combining classical and quantum computation, CutQC2 significantly expands the computational reach beyond either platform alone.
 
-Complete documentation of CutQC2 is available here [here](https://vineetbansal.github.io/cutqc2/).
+Complete documentation of CutQC2 is available [here](https://vineetbansal.github.io/cutqc2/).
