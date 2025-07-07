@@ -1,4 +1,4 @@
-import itertools, copy, pickle, subprocess, psutil, os, logging
+import itertools, copy, pickle, subprocess, psutil, os
 import numpy as np
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.circuit.library.standard_gates import HGate, SGate, SdgGate, XGate

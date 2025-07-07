@@ -1,8 +1,8 @@
+import math
 from qiskit.dagcircuit.dagcircuit import DAGCircuit
 from qiskit.dagcircuit import DAGOpNode
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 import gurobipy as gp
-import math, logging
 from qiskit import QuantumCircuit, QuantumRegister
 from cutqc2.cutqc.cutqc.cut_solution import CutSolution
 
@@ -263,15 +263,9 @@ class MIP_Model(object):
             assert u < n_vertices
 
     def solve(self):
-        # logging.info('solving for %d subcircuits'%self.num_subcircuit)
-        # logging.info('model has %d variables, %d linear constraints,%d quadratic constraints, %d general constraints'
-        # % (self.model.NumVars,self.model.NumConstrs, self.model.NumQConstrs, self.model.NumGenConstrs))
-        try:
-            self.model.params.threads = 48
-            self.model.Params.TimeLimit = 30
-            self.model.optimize()
-        except (gp.GurobiError, AttributeError, Exception) as e:
-            logging.info("Caught: " + e.message)
+        self.model.params.threads = 48
+        self.model.Params.TimeLimit = 30
+        self.model.optimize()
 
         if self.model.solcount > 0:
             self.objective = None
@@ -304,7 +298,6 @@ class MIP_Model(object):
             self.cut_edges = cut_edges
             return True
         else:
-            # logging.info('Infeasible')
             return False
 
 
@@ -334,7 +327,6 @@ def read_circ(circuit):
         )
         qubit_gate_counter[arg0] += 1
         qubit_gate_counter[arg1] += 1
-        # logging.info(vertex.op.label,vertex_name,curr_node_id)
         if vertex_name not in node_name_ids and id(vertex) not in vertex_ids:
             node_name_ids[vertex_name] = curr_node_id
             id_node_names[curr_node_id] = vertex_name
@@ -422,17 +414,14 @@ def subcircuits_parser(subcircuit_gates, circuit):
             for qarg_B in gate_B.split(" "):
                 qubit_B = qarg_B.split("]")[0] + "]"
                 qgate_B = int(qarg_B.split("]")[-1])
-                # logging.info('%s gate %d --> %s gate %d'%(qubit_A,qgate_A,qubit_B,qgate_B))
                 if qubit_A == qubit_B:
                     distance = min(distance, abs(qgate_B - qgate_A))
-        # logging.info('Distance from %s to %s = %f'%(gate_A,gate_B,distance))
         return distance
 
     dag = circuit_to_dag(circuit)
     qubit_allGate_depths = {x: 0 for x in circuit.qubits}
     qubit_2qGate_depths = {x: 0 for x in circuit.qubits}
     gate_depth_encodings = {}
-    # logging.info('Before translation :',subcircuit_gates,flush=True)
     for op_node in dag.topological_op_nodes():
         gate_depth_encoding = ""
         for qarg in op_node.qargs:
@@ -455,7 +444,6 @@ def subcircuits_parser(subcircuit_gates, circuit):
                 )
                 qubit_2qGate_depths[qarg] += 1
             MIP_gate_depth_encoding = MIP_gate_depth_encoding[:-1]
-            # logging.info('gate_depth_encoding = %s, MIP_gate_depth_encoding = %s'%(gate_depth_encoding,MIP_gate_depth_encoding))
             for subcircuit_idx in range(len(subcircuit_gates)):
                 for gate_idx in range(len(subcircuit_gates[subcircuit_idx])):
                     if (
@@ -464,7 +452,7 @@ def subcircuits_parser(subcircuit_gates, circuit):
                     ):
                         subcircuit_gates[subcircuit_idx][gate_idx] = gate_depth_encoding
                         break
-    # logging.info('After translation :',subcircuit_gates,flush=True)
+
     subcircuit_op_nodes = {x: [] for x in range(len(subcircuit_gates))}
     subcircuit_sizes = [0 for x in range(len(subcircuit_gates))]
     complete_path_map = {}
@@ -488,7 +476,6 @@ def subcircuits_parser(subcircuit_gates, circuit):
                                 gate_A=gate_depth_encoding, gate_B=gate
                             ),
                         )
-                # logging.info('Distance from %s to subcircuit %d = %f'%(gate_depth_encoding,subcircuit_idx,distance))
                 if distance < min_distance:
                     min_distance = distance
                     nearest_subcircuit_idx = subcircuit_idx
@@ -502,20 +489,16 @@ def subcircuits_parser(subcircuit_gates, circuit):
                 or nearest_subcircuit_idx
                 != complete_path_map[circuit_qubit][-1]["subcircuit_idx"]
             ):
-                # logging.info('{} op #{:d} {:s} encoding = {:s}'.format(circuit_qubit,qubit_op_idx,qubit_op.name,gate_depth_encoding),
-                # 'belongs in subcircuit %d'%nearest_subcircuit_idx)
                 complete_path_map[circuit_qubit].append(path_element)
                 subcircuit_sizes[nearest_subcircuit_idx] += 1
 
             subcircuit_op_nodes[nearest_subcircuit_idx].append(qubit_op)
     for circuit_qubit in complete_path_map:
-        # logging.info(circuit_qubit,'-->')
         for path_element in complete_path_map[circuit_qubit]:
             path_element_qubit = QuantumRegister(
                 size=subcircuit_sizes[path_element["subcircuit_idx"]], name="q"
             )[path_element["subcircuit_qubit"]]
             path_element["subcircuit_qubit"] = path_element_qubit
-            # logging.info(path_element)
     subcircuits = generate_subcircuits(
         subcircuit_op_nodes=subcircuit_op_nodes,
         complete_path_map=complete_path_map,
@@ -536,7 +519,6 @@ def generate_subcircuits(subcircuit_op_nodes, complete_path_map, subcircuit_size
         )
         assert len(subcircuit_idx) == 1
         subcircuit_idx = subcircuit_idx[0]
-        # logging.info('{} belongs in subcircuit {:d}'.format(op_node.qargs,subcircuit_idx))
         subcircuit_qargs = []
         for op_node_qarg in op_node.qargs:
             if (
@@ -549,7 +531,6 @@ def generate_subcircuits(subcircuit_op_nodes, complete_path_map, subcircuit_size
             path_element = complete_path_map[op_node_qarg][qubit_pointers[op_node_qarg]]
             assert path_element["subcircuit_idx"] == subcircuit_idx
             subcircuit_qargs.append(path_element["subcircuit_qubit"])
-        # logging.info('-->',subcircuit_qargs)
         subcircuits[subcircuit_idx].append(
             instruction=op_node.op, qargs=subcircuit_qargs, cargs=None
         )

@@ -1,4 +1,3 @@
-import subprocess, os, logging
 from qiskit.converters import circuit_to_dag
 from cutqc2.cutqc.cutqc.cutter import find_cuts
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
