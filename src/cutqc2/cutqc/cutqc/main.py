@@ -48,22 +48,11 @@ class CutQC:
         """
         cutter_begin = perf_counter()
 
-        cut_solution = find_cuts(
-            **self.cutter_constraints, circuit=self.circuit, verbose=self.verbose
+        self.cut_solution = find_cuts(
+            **self.cutter_constraints, circuit=self.circuit, verbose=self.verbose, raise_error=True
         )
-
-        if cut_solution is None:
-            raise RuntimeError("The input circuit and constraints have no viable cuts")
-        else:
-            self.cut_solution = cut_solution
-            self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = (
-                self.cut_solution.generate_metadata(
-                    self.cut_solution.counter,
-                    self.cut_solution.subcircuits,
-                    self.cut_solution.complete_path_map,
-                )
-            )
-            self.times["cutter"] = perf_counter() - cutter_begin
+        self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = self.cut_solution.compute_graph, self.cut_solution.subcircuit_entries, self.cut_solution.subcircuit_instances
+        self.times["cutter"] = perf_counter() - cutter_begin
 
 
     def evaluate(self, num_shots_fn):

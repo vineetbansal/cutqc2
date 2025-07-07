@@ -606,6 +606,7 @@ def find_cuts(
     max_subcircuit_cuts,
     subcircuit_size_imbalance,
     verbose,
+    raise_error: bool = False,
 ) -> CutSolution | None:
     stripped_circ = circuit_stripping(circuit=circuit)
     n_vertices, edges, vertex_ids, id_vertices = read_circ(circuit=stripped_circ)
@@ -650,6 +651,8 @@ def find_cuts(
             )
             return cut_solution
 
+    if raise_error:
+        raise RuntimeError("No viable cuts found")
     return None
 
 

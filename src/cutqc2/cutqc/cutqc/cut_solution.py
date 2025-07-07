@@ -10,18 +10,15 @@ class CutSolution:
         self.num_cuts = num_cuts
         self.counter = counter
 
-    def generate_metadata(self, counter, subcircuits, complete_path_map):
-        compute_graph = self.generate_compute_graph(
-            counter=counter,
-            subcircuits=subcircuits,
-            complete_path_map=complete_path_map,
-        )
+        self.generate_metadata()
 
-        (
-            subcircuit_entries,
-            subcircuit_instances,
-        ) = self.generate_subcircuit_entries(compute_graph=compute_graph)
-        return compute_graph, subcircuit_entries, subcircuit_instances
+    def generate_metadata(self):
+        self.compute_graph = self.generate_compute_graph(
+            counter=self.counter,
+            subcircuits=self.subcircuits,
+            complete_path_map=self.complete_path_map,
+        )
+        self.subcircuit_entries, self.subcircuit_instances = self.generate_subcircuit_entries(compute_graph=self.compute_graph)
 
     def generate_compute_graph(self, counter, subcircuits, complete_path_map):
         """
@@ -60,7 +57,6 @@ class CutSolution:
         subcircuit_entries = {}
         subcircuit_instances = {}
         for subcircuit_idx in compute_graph.nodes:
-            # print('subcircuit_%d'%subcircuit_idx)
             bare_subcircuit = compute_graph.nodes[subcircuit_idx]["subcircuit"]
             subcircuit_entries[subcircuit_idx] = {}
             subcircuit_instances[subcircuit_idx] = []
@@ -98,8 +94,7 @@ class CutSolution:
                         raise IndexError(
                             "Generating entries for a subcircuit. subcircuit_idx should be either upstream or downstream"
                         )
-                # print('subcircuit_entry_init =',subcircuit_entry_init)
-                # print('subcircuit_entry_meas =',subcircuit_entry_meas)
+
                 subcircuit_instance_init_meas = self.get_instance_init_meas(
                     init_label=subcircuit_entry_init,
                     meas_label=subcircuit_entry_meas
