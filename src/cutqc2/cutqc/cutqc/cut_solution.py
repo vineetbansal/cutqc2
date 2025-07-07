@@ -3,7 +3,6 @@ from copy import deepcopy
 import numpy as np
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
-from cutqc2.cutqc.cutqc.post_process_helper import get_reconstruction_qubit_order
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
 from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins
@@ -196,13 +195,34 @@ class CutSolution:
 
                     self.annotated_subcircuits[from_subcircuit_index]["effective"] -= 1
 
+    def get_reconstruction_qubit_order(self):
+        """
+        Get the output qubit in the full circuit for each subcircuit
+        Qiskit orders the full circuit output in descending order of qubits
+        """
+        subcircuit_out_qubits = {
+            subcircuit_idx: [] for subcircuit_idx in range(len(self))
+        }
+        for input_qubit, path in self.complete_path_map.items():
+            output_qubit = path[-1]
+            subcircuit_out_qubits[output_qubit["subcircuit_idx"]].append(
+                (output_qubit["subcircuit_qubit"],
+                 self.circuit.qubits.index(input_qubit))
+            )
+        for subcircuit_idx in subcircuit_out_qubits:
+            subcircuit_out_qubits[subcircuit_idx] = sorted(
+                subcircuit_out_qubits[subcircuit_idx],
+                key=lambda x: self[subcircuit_idx].qubits.index(x[0]),
+                reverse=True,
+            )
+            subcircuit_out_qubits[subcircuit_idx] = [
+                x[1] for x in subcircuit_out_qubits[subcircuit_idx]
+            ]
+        return subcircuit_out_qubits
+
     def full_verify(self, dd_bins):
         ground_truth = evaluate_circ(circuit=self.circuit, backend="statevector_simulator")
-        subcircuit_out_qubits = get_reconstruction_qubit_order(
-            full_circuit=self.circuit,
-            complete_path_map=self.complete_path_map,
-            subcircuits=self.subcircuits,
-        )
+        subcircuit_out_qubits = self.get_reconstruction_qubit_order()
         reconstructed_prob = read_dd_bins(
             subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=dd_bins
         )
