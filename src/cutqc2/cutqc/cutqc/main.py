@@ -1,7 +1,6 @@
 import subprocess, os, logging
 from time import perf_counter
-
-from cutqc2.cutqc.cutqc.helper_fun import check_valid
+from qiskit.converters import circuit_to_dag
 from cutqc2.cutqc.cutqc.cutter import find_cuts
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
@@ -13,6 +12,29 @@ class CutQC:
     cut --> evaluate results --> verify (optional)
     """
 
+    @staticmethod
+    def check_valid(circuit):
+        """
+        If the input circuit is not fully connected, it does not need CutQC to be split into smaller circuits.
+        CutQC hence only cuts a circuit if it is fully connected.
+        Furthermore, CutQC only supports 2-qubit gates.
+        """
+        if circuit.num_unitary_factors() != 1:
+            raise ValueError(
+                f"Input circuit is not fully connected thus does not need cutting. Number of unitary factors = {circuit.num_unitary_factors()}"
+            )
+        if circuit.num_clbits > 0:
+            raise ValueError(
+                "Please remove classical bits from the circuit before cutting")
+        dag = circuit_to_dag(circuit)
+        for op_node in dag.topological_op_nodes():
+            if len(op_node.qargs) > 2:
+                raise ValueError(
+                    "CutQC currently does not support >2-qubit gates")
+            if op_node.op.name == "barrier":
+                raise ValueError(
+                    "Please remove barriers from the circuit before cutting")
+
     def __init__(self, circuit, cutter_constraints, verbose):
         """
         Args:
@@ -23,7 +45,7 @@ class CutQC:
         Useful to visualize what happens,
         but may produce very long outputs for complicated circuits.
         """
-        check_valid(circuit=circuit)
+        self.check_valid(circuit=circuit)
         self.circuit = circuit
         self.cutter_constraints = cutter_constraints
         self.verbose = verbose
