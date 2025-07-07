@@ -1,5 +1,4 @@
 import subprocess, os, logging
-from time import perf_counter
 from qiskit.converters import circuit_to_dag
 from cutqc2.cutqc.cutqc.cutter import find_cuts
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
@@ -32,7 +31,6 @@ class CutQC:
 
 
     def evaluate(self, num_shots_fn=None):
-        evaluate_begin = perf_counter()
         self.subcircuit_entry_probs = {}
         for subcircuit_index in range(len(self.cut_solution)):
             subcircuit_measured_probs = run_subcircuit_instances(
@@ -46,7 +44,6 @@ class CutQC:
                 subcircuit_measured_probs=subcircuit_measured_probs,
                 subcircuit_entries=self.subcircuit_entries[subcircuit_index],
             )
-        eval_time = perf_counter() - evaluate_begin
 
     def build(self, mem_limit, recursion_depth):
         dd = DynamicDefinition(

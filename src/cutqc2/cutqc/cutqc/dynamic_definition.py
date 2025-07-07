@@ -1,5 +1,4 @@
-import itertools, copy, pickle, subprocess, logging
-from time import perf_counter
+import itertools, copy, pickle, subprocess
 import numpy as np
 
 from cutqc2.cutqc.cutqc.evaluator import get_num_workers
@@ -22,11 +21,6 @@ class DynamicDefinition(object):
         self.mem_limit = mem_limit
         self.recursion_depth = recursion_depth
         self.dd_bins = {}
-        self.times = {
-            "get_dd_schedule": 0.0,
-            "merge_states_into_bins": 0.0,
-            "sort": 0.0,
-        }
 
     def build(self):
         """
@@ -44,9 +38,7 @@ class DynamicDefinition(object):
         largest_bins = []  # [{recursion_layer, bin_id}]
         recursion_layer = 0
         while recursion_layer < self.recursion_depth:
-            logging.info("-" * 10 + f"Recursion Layer {recursion_layer}" + "-" * 10)
             """Get qubit states"""
-            get_dd_schedule_begin = perf_counter()
             if recursion_layer == 0:
                 dd_schedule = self.initialize_dynamic_definition_schedule()
             elif len(largest_bins) == 0:
@@ -57,7 +49,6 @@ class DynamicDefinition(object):
                     recursion_layer=bin_to_expand["recursion_layer"],
                     bin_id=bin_to_expand["bin_id"],
                 )
-            self.times["get_dd_schedule"] += perf_counter() - get_dd_schedule_begin
 
             merged_subcircuit_entry_probs = self.merge_states_into_bins(dd_schedule)
 
@@ -76,7 +67,6 @@ class DynamicDefinition(object):
             self.dd_bins[recursion_layer]["expanded_bins"] = []
 
             """ Sort and truncate the largest bins """
-            sort_begin = perf_counter()
             has_merged_states = False
             for subcircuit_idx in dd_schedule["subcircuit_state"]:
                 if "merged" in dd_schedule["subcircuit_state"][subcircuit_idx]:
@@ -98,7 +88,6 @@ class DynamicDefinition(object):
                 largest_bins = sorted(
                     largest_bins, key=lambda bin: bin["prob"], reverse=True
                 )[: self.recursion_depth]
-            self.times["sort"] += perf_counter() - sort_begin
             recursion_layer += 1
 
     def initialize_dynamic_definition_schedule(self):
@@ -195,7 +184,6 @@ class DynamicDefinition(object):
         The first merge of subcircuit probs using the target number of bins
         Saves the overhead of writing many states in the first SM recursion
         """
-        begin = perf_counter()
         merged_subcircuit_entry_probs = {}
         for subcircuit_idx in self.compute_graph.nodes:
             merged_subcircuit_entry_probs[subcircuit_idx] = {}
@@ -211,7 +199,6 @@ class DynamicDefinition(object):
                     unmerged_prob_vector=unmerged_prob_vector,
                     qubit_states=dd_schedule["subcircuit_state"][subcircuit_idx],
                 )
-        self.times["merge_states_into_bins"] += perf_counter() - begin
         return merged_subcircuit_entry_probs
 
 
