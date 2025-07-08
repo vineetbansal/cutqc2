@@ -131,7 +131,8 @@ class CutSolution:
 
         self.subcircuit_entries, self.subcircuit_instances = subcircuit_entries, subcircuit_instances
 
-    def get_instance_init_meas(self, initializations, measurements):
+    @staticmethod
+    def get_instance_init_meas(initializations, measurements):
         init_combinations = []
         for initialization in initializations:
             match initialization:
