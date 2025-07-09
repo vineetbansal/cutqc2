@@ -156,7 +156,9 @@ class CutSolution:
             subcircuit_init_meas.append((tuple(init), tuple(measurements)))
         return subcircuit_init_meas
 
-    def convert_to_physical_init(self, init):
+    @staticmethod
+    def convert_to_physical_init(init):
+        init = list(init)  # Do not modify in place!
         coefficient = 1
         for idx, x in enumerate(init):
             if x == "zero":
