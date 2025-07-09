@@ -41,12 +41,12 @@ def test_cut():
     )
     cutqc.cut()
 
-    subcircuit0, subcircuit1 = cutqc.cut_solution["subcircuits"]
+    subcircuit0, subcircuit1 = cutqc.cut_solution.subcircuits
     print(subcircuit0)
     print_counts(subcircuit0)
     print(subcircuit1)
     print_counts(subcircuit1)
 
     cutqc.evaluate(num_shots_fn=None)
-    cutqc.build(mem_limit=10, recursion_depth=3)
+    cutqc.build(mem_limit=10, recursion_depth=1)
     cutqc.verify()

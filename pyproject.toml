@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cutqc2"
 version = "0.0.1"
@@ -43,6 +47,9 @@ docs = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+"*" = ["*.cu"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

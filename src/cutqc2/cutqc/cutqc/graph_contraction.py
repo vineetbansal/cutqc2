@@ -1,7 +1,5 @@
-import itertools, math
-from time import perf_counter
+import itertools
 import numpy as np
-import logging, os
 
 
 def compute_summation_term(*argv):
@@ -40,7 +38,6 @@ class GraphContractor(object):
     def compute(self):
         edges = self.compute_graph.get_edges(from_node=None, to_node=None)
 
-        compute_begin = perf_counter()
         reconstructed_prob = None
         for edge_bases in itertools.product(["I", "X", "Y", "Z"], repeat=len(edges)):
             self.compute_graph.assign_bases_to_edges(edge_bases=edge_bases, edges=edges)
@@ -59,5 +56,4 @@ class GraphContractor(object):
                 reconstructed_prob += compute_summation_term(*summation_term)
             self.compute_graph.remove_bases_from_edges(edges=self.compute_graph.edges)
         reconstructed_prob *= 1 / 2**self.num_cuts
-        self.times["compute"] = perf_counter() - compute_begin
         return reconstructed_prob
