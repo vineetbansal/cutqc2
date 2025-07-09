@@ -1,4 +1,4 @@
-import os, math
+import math
 from cutqc.main import CutQC
 from helper_functions.benchmarks import generate_circ
 
