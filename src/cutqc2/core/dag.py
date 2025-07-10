@@ -1,4 +1,6 @@
 from itertools import product
+from qiskit.circuit.quantumregister import Qubit
+from qiskit.dagcircuit.dagcircuit import DAGCircuit
 
 
 class DagNode:
@@ -6,9 +8,13 @@ class DagNode:
     Represents a node in a quantum circuit DAG (Directed Acyclic Graph),
     corresponding to a specific gate on a specific wire (qubit/register).
 
+    Since only inter-wire gates are important for the cut algorithm,
+    any mention of `gate_index` refers to the index wrt inter-wire gates only.
+
     Attributes:
         wire_index (int): The index of the wire (qubit/register).
         gate_index (int): The index of the gate on the wire.
+          Note: `gate_index` assumes that only inter-wire gates are considered.
         register_name (str): The name of the register (default 'q').
     """
 
@@ -66,6 +72,29 @@ class DagNode:
         if self.wire_index != other.wire_index:
             raise ValueError("Cannot subtract nodes on different wires")
         return self.gate_index - other.gate_index
+
+    def locate(self, dag_circuit: DAGCircuit) -> tuple[Qubit, int]:
+        """
+        Locate the position of the DagNode in the DAGCircuit.
+        Args:
+            dag_circuit (DAGCircuit): The DAGCircuit containing the node.
+
+        Returns:
+            tuple[Qubit, int]: A tuple containing the Qubit and the index of the gate on that wire.
+
+        Raises:
+            ValueError: If the node cannot be found in the DAGCircuit.
+        """
+        wire = dag_circuit.wires[self.wire_index]
+        multi_wire_gate_i = 0
+
+        for i, gate in enumerate(dag_circuit.nodes_on_wire(wire, only_ops=True)):
+            if len(gate.qargs) > 1:
+                if multi_wire_gate_i == self.gate_index:
+                    return wire, i
+                multi_wire_gate_i += 1
+
+        raise ValueError("not found")
 
 
 class DAGEdge:
