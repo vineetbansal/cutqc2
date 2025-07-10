@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   cutqc2.core
    cutqc2.cupy
 
 Submodules
