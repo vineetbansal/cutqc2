@@ -5,6 +5,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 import gurobipy as gp
 from qiskit import QuantumCircuit, QuantumRegister
 from cutqc2.cutqc.cutqc.cut_solution import CutSolution
+from cutqc2.core.dag import DagNode, DAGEdge
 
 
 class MIP_Model(object):
@@ -14,6 +15,7 @@ class MIP_Model(object):
         edges,
         vertex_ids,
         id_vertices,
+        id_to_dag_edge,
         num_subcircuit,
         max_subcircuit_width,
         max_subcircuit_cuts,
@@ -27,6 +29,7 @@ class MIP_Model(object):
         self.n_edges = len(edges)
         self.vertex_ids = vertex_ids
         self.id_vertices = id_vertices
+        self.id_to_dag_edge = id_to_dag_edge
         self.num_subcircuit = num_subcircuit
         self.max_subcircuit_width = max_subcircuit_width
         self.max_subcircuit_cuts = max_subcircuit_cuts
@@ -289,12 +292,22 @@ class MIP_Model(object):
 
             cut_edges_idx = []
             cut_edges = []
+            self.cut_edges_pairs = []
+
             for i in range(self.num_subcircuit):
                 for j in range(self.n_edges):
                     if abs(self.edge_var[i][j].x) > 1e-4 and j not in cut_edges_idx:
                         cut_edges_idx.append(j)
                         u, v = self.edges[j]
                         cut_edges.append((self.id_vertices[u], self.id_vertices[v]))
+
+                        self.cut_edges_pairs.append(
+                            (
+                                self.id_to_dag_edge[u],
+                                self.id_to_dag_edge[v]
+                            )
+                        )
+
             self.cut_edges = cut_edges
             return True
         else:
@@ -305,32 +318,45 @@ def read_circ(circuit):
     dag = circuit_to_dag(circuit)
     edges = []
     node_name_ids = {}
+    dag_edge_to_id = {}
     id_node_names = {}
+    id_to_dag_edge = {}
     vertex_ids = {}
     curr_node_id = 0
     qubit_gate_counter = {}
+
     for qubit in dag.qubits:
         qubit_gate_counter[qubit] = 0
+
     for vertex in dag.topological_op_nodes():
         if len(vertex.qargs) != 2:
             raise Exception("vertex does not have 2 qargs!")
 
         arg0, arg1 = vertex.qargs
 
-        vertex_name = "%s[%d]%d %s[%d]%d" % (
-            arg0._register.name,
-            arg0._index,
-            qubit_gate_counter[arg0],
-            arg1._register.name,
-            arg1._index,
-            qubit_gate_counter[arg1],
+        dag_edge = DAGEdge(
+            DagNode(
+                register_name=arg0._register.name,
+                wire_index=arg0._index,
+                gate_index=qubit_gate_counter[arg0],
+            ),
+            DagNode(
+                register_name=arg1._register.name,
+                wire_index=arg1._index,
+                gate_index=qubit_gate_counter[arg1],
+            )
         )
+        vertex_name = str(dag_edge)
+
         qubit_gate_counter[arg0] += 1
         qubit_gate_counter[arg1] += 1
         if vertex_name not in node_name_ids and id(vertex) not in vertex_ids:
             node_name_ids[vertex_name] = curr_node_id
+            dag_edge_to_id[dag_edge] = curr_node_id
             id_node_names[curr_node_id] = vertex_name
+            id_to_dag_edge[curr_node_id] = dag_edge
             vertex_ids[id(vertex)] = curr_node_id
+
             curr_node_id += 1
 
     for u, v, _ in dag.edges():
@@ -340,10 +366,18 @@ def read_circ(circuit):
             edges.append((u_id, v_id))
 
     n_vertices = dag.size()
-    return n_vertices, edges, node_name_ids, id_node_names
+
+    return {
+        "n_vertices": n_vertices,
+        "edges": edges,
+        "node_name_ids": node_name_ids,
+        "id_node_names": id_node_names,
+        "dag_edge_to_id": dag_edge_to_id,
+        "id_to_dag_edge": id_to_dag_edge,
+    }
 
 
-def cuts_parser(cuts, circ):
+def cuts_parser(cuts, cut_edge_pairs, circ):
     dag = circuit_to_dag(circ)
     positions = []
     for position in cuts:
@@ -390,7 +424,28 @@ def cuts_parser(cuts, circ):
                 if tmp == multi_Q_gate_idx:
                     all_Q_gate_idx = gate_idx
         positions.append((wire, all_Q_gate_idx))
+
     positions = sorted(positions, reverse=True, key=lambda cut: cut[1])
+
+    # ---- New implementation ---- #
+    cut_positions = []  # list of 2-tuples: (<wire>, <gate_index>)
+    for cut_edge_pair in cut_edge_pairs:
+        p, q = cut_edge_pair[0] | cut_edge_pair[1]
+        if q-p == 1:
+            cut_position = p.locate(dag)
+            cut_positions.append(cut_position)
+        else:
+            raise ValueError("Invalid cut - the cut edge does not connect two adjacent gates.")
+
+    # TODO: We do not need to do the following (in fact most of what we did)
+    #  since the caller is only interested in the length of the positions!
+    cut_positions = sorted(cut_positions, reverse=True, key=lambda cut: cut[1])
+
+    # This assertion proves that all code related to `positions` can eventually
+    # go away.
+    assert positions == cut_positions
+    # ---- New implementation ---- #
+
     return positions
 
 
@@ -452,6 +507,12 @@ def subcircuits_parser(subcircuit_gates, circuit):
                     ):
                         subcircuit_gates[subcircuit_idx][gate_idx] = gate_depth_encoding
                         break
+
+    # At this point, `subcircuit_gates` has now been replaced from the MIP-view of the subcircuits
+    # where only inter-wire gates are considered, to the full circuit view
+    # where all gates are considered.
+    # [['q[0]0 q[1]0'], ['q[0]1 q[2]0']] => [['q[0]2 q[1]1'], ['q[0]3 q[2]1']]
+    # Everything else is unnecessary
 
     subcircuit_op_nodes = {x: [] for x in range(len(subcircuit_gates))}
     subcircuit_sizes = [0 for x in range(len(subcircuit_gates))]
@@ -558,8 +619,19 @@ def find_cuts(
     verbose,
     raise_error: bool = False,
 ) -> CutSolution | None:
+
     stripped_circ = circuit_stripping(circuit=circuit)
-    n_vertices, edges, vertex_ids, id_vertices = read_circ(circuit=stripped_circ)
+    results = read_circ(circuit=stripped_circ)
+
+    n_vertices, edges, vertex_ids, id_vertices, dag_edge_to_id, id_to_dag_edge = (
+        results["n_vertices"],
+        results["edges"],
+        results["node_name_ids"],
+        results["id_node_names"],
+        results["dag_edge_to_id"],
+        results["id_to_dag_edge"],
+    )
+
     num_qubits = circuit.num_qubits
     cut_solution = {}
 
@@ -575,6 +647,7 @@ def find_cuts(
             edges=edges,
             vertex_ids=vertex_ids,
             id_vertices=id_vertices,
+            id_to_dag_edge=id_to_dag_edge,
             num_subcircuit=num_subcircuit,
             max_subcircuit_width=max_subcircuit_width,
             max_subcircuit_cuts=max_subcircuit_cuts,
@@ -586,7 +659,7 @@ def find_cuts(
         mip_model = MIP_Model(**kwargs)
         feasible = mip_model.solve()
         if feasible:
-            positions = cuts_parser(mip_model.cut_edges, circuit)
+            positions = cuts_parser(mip_model.cut_edges, mip_model.cut_edges_pairs, circuit)
             subcircuits, complete_path_map = subcircuits_parser(
                 subcircuit_gates=mip_model.subcircuits, circuit=circuit
             )
