@@ -20,15 +20,39 @@ class CutCircuit:
         self,
         circuit: QuantumCircuit,
         cut_qubits_and_positions: list[tuple[Qubit, int]] | None = None,
+        add_labels: bool = True,
     ):
-        self.circuit = circuit
+        if add_labels:
+            self.circuit = self.get_labeled_circuit(circuit.copy())
+        else:
+            self.circuit = circuit.copy()
+
         for cut_qubit_and_position in cut_qubits_and_positions or []:
             self.add_cut(cut_qubit_and_position)
 
     def __str__(self):
         return str(self.circuit)
 
-    def add_cut(self, cut_qubit_and_position: tuple[Qubit, int]) -> QuantumCircuit:
+    @staticmethod
+    def get_labeled_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
+        labeled_instructions = []
+        for i, instr in enumerate(list(circuit.data)):
+            label = f"{i:04d}"
+            new_op = instr.operation.copy().to_mutable()
+            new_op.label = label
+            instr = CircuitInstruction(
+                operation=new_op, qubits=instr.qubits, clbits=instr.clbits
+            )
+            labeled_instructions.append(instr)
+
+        labeled_circuit = QuantumCircuit.from_instructions(
+            labeled_instructions, qubits=circuit.qubits, clbits=circuit.clbits
+        )
+        labeled_circuit.qregs = circuit.qregs
+
+        return labeled_circuit
+
+    def add_cut(self, cut_qubit_and_position: tuple[Qubit, int]):
         """
         Add a cut to the circuit at the specified position.
         Args:
@@ -37,8 +61,6 @@ class CutCircuit:
                                     The position is a 0-indexed integer indicating the gate position
                                     on the wire 'after' which the cut should be made.
                                     This tuple format is what legacy CutQC code mostly uses.
-        Returns:
-            QuantumCircuit: The modified circuit with the cut added.
         """
         cut_qubit, cut_position = cut_qubit_and_position
         cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
@@ -50,3 +72,17 @@ class CutCircuit:
                     self.circuit.data.insert(i, cut_instr)
                     break
                 cut_wire_position += 1
+
+    def add_cut_at_label(self, label: str):
+        """
+        Add a cut to the circuit at the position of the instruction with the specified label.
+        Args:
+            label: The label of the instruction after which the cut should be made.
+        """
+        for i, instr in enumerate(self.circuit.data):
+            if instr.operation.label == label:
+                cut_qubit = instr.qubits[0]
+                cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
+                # insert the cut instruction right after the current instruction
+                self.circuit.data.insert(i + 1, cut_instr)
+                break

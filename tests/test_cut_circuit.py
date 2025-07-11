@@ -18,10 +18,11 @@ def simple_circuit() -> QuantumCircuit:
     return qc
 
 
-def test_cut_solution_str(simple_circuit):
+def test_cut_circuit_str(simple_circuit):
     cut_circuit = CutCircuit(
         simple_circuit,
         cut_qubits_and_positions=[(Qubit(QuantumRegister(3, "q"), 0), 2)],
+        add_labels=False,
     )
     got_str = str(cut_circuit)
     expected_str = textwrap.dedent("""
@@ -32,5 +33,40 @@ def test_cut_solution_str(simple_circuit):
                            └───┘      ┌─┴─┐
             q_2: ─|0>─────────────────┤ X ├
                                       └───┘
+    """).strip("\n")
+    assert got_str == expected_str
+
+
+def test_labeled_cut_circuit_str(simple_circuit):
+    cut_circuit = CutCircuit(
+        simple_circuit,
+        cut_qubits_and_positions=[(Qubit(QuantumRegister(3, "q"), 0), 2)],
+        add_labels=True,
+    )
+    got_str = str(cut_circuit)
+    expected_str = textwrap.dedent("""
+                ┌──────┐ 0004 ┌────┐ 0005 
+        0: ─|0>─┤ 0003 ├──■───┤ ✂️ ├──■───
+                └──────┘┌─┴─┐ └────┘  │   
+        1: ─|0>─────────┤ X ├─────────┼───
+                        └───┘       ┌─┴─┐ 
+        2: ─|0>─────────────────────┤ X ├─
+                                    └───┘ 
+    """).strip("\n")
+    assert got_str == expected_str
+
+
+def test_cut_circuit_add_cut(simple_circuit):
+    cut_circuit = CutCircuit(simple_circuit)
+    cut_circuit.add_cut_at_label("0004")
+    got_str = str(cut_circuit)
+    expected_str = textwrap.dedent("""
+                ┌──────┐ 0004 ┌────┐ 0005 
+        0: ─|0>─┤ 0003 ├──■───┤ ✂️ ├──■───
+                └──────┘┌─┴─┐ └────┘  │   
+        1: ─|0>─────────┤ X ├─────────┼───
+                        └───┘       ┌─┴─┐ 
+        2: ─|0>─────────────────────┤ X ├─
+                                    └───┘ 
     """).strip("\n")
     assert got_str == expected_str
