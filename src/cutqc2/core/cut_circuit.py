@@ -4,6 +4,8 @@ from qiskit.circuit.library import UnitaryGate
 from qiskit.circuit import Qubit, QuantumRegister, CircuitInstruction
 from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
+from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
+from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
 from cutqc2.core.dag import DagNode, DAGEdge
 from cutqc2.cutqc.cutqc.cut_solution import CutSolution
 
@@ -23,7 +25,6 @@ class CutCircuit:
     def __init__(
         self,
         circuit: QuantumCircuit,
-        cut_qubits_and_positions: list[tuple[Qubit, int]] | None = None,
         add_labels: bool = True,
     ):
         self.raw_circuit = circuit
@@ -33,9 +34,6 @@ class CutCircuit:
             self.circuit = circuit.copy()
 
         self.subcircuits = []
-        for cut_qubit_and_position in cut_qubits_and_positions or []:
-            self.add_cut(cut_qubit_and_position)
-
         self.inter_wire_dag = self.get_inter_wire_dag(self.circuit)
         self.inter_wire_dag_metadata = self.get_dag_metadata(self.inter_wire_dag)
 
@@ -50,6 +48,25 @@ class CutCircuit:
 
     def __getitem__(self, item):
         return self.subcircuits[item]
+
+    @staticmethod
+    def check_valid(circuit: QuantumCircuit):
+        unitary_factors = circuit.num_unitary_factors()
+        assert unitary_factors == 1, (
+            f"Input circuit is not fully connected thus does not need cutting. Number of unitary factors = {unitary_factors}"
+        )
+
+        assert circuit.num_clbits == 0, (
+            "Please remove classical bits from the circuit before cutting"
+        )
+        dag = circuit_to_dag(circuit)
+        for op_node in dag.topological_op_nodes():
+            assert len(op_node.qargs) <= 2, (
+                "CutQC currently does not support >2-qubit gates"
+            )
+            assert op_node.op.name != "barrier", (
+                "Please remove barriers from the circuit before cutting"
+            )
 
     @staticmethod
     def get_labeled_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -92,10 +109,7 @@ class CutCircuit:
     def get_dag_metadata(dag: DAGCircuit) -> dict:
         edges = []
         node_name_ids = {}
-        node_label_ids = {}
-        dag_edge_to_id = {}
         id_node_names = {}
-        id_node_labels = {}
         id_to_dag_edge = {}
         vertex_ids = {}
         curr_node_id = 0
@@ -129,10 +143,7 @@ class CutCircuit:
             qubit_gate_counter[arg1] += 1
             if vertex_name not in node_name_ids and id(vertex) not in vertex_ids:
                 node_name_ids[vertex_name] = curr_node_id
-                node_label_ids[vertex.label] = curr_node_id
-                dag_edge_to_id[dag_edge] = curr_node_id
                 id_node_names[curr_node_id] = vertex_name
-                id_node_labels[curr_node_id] = vertex.label
                 id_to_dag_edge[curr_node_id] = dag_edge
                 vertex_ids[id(vertex)] = curr_node_id
 
@@ -151,32 +162,55 @@ class CutCircuit:
             "edges": edges,
             "vertex_ids": node_name_ids,
             "id_vertices": id_node_names,
-            "dag_edge_to_id": dag_edge_to_id,
             "id_to_dag_edge": id_to_dag_edge,
-            "vertex_label_ids": node_label_ids,
-            "id_vertex_labels": id_node_labels,
         }
 
-    def add_cut(self, cut_qubit_and_position: tuple[Qubit, int]):
-        """
-        Add a cut to the circuit at the specified position.
-        Args:
-            cut_qubit_and_position: A tuple containing the Qubit to cut and the position
-                                    in the wire where the cut should be made.
-                                    The position is a 0-indexed integer indicating the gate position
-                                    on the wire 'after' which the cut should be made.
-                                    This tuple format is what legacy CutQC code mostly uses.
-        """
-        cut_qubit, cut_position = cut_qubit_and_position
-        cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
+    def find_cuts(
+        self,
+        max_subcircuit_width: int,
+        max_cuts: int,
+        num_subcircuits: list[int],
+        max_subcircuit_cuts: int,
+        subcircuit_size_imbalance: int,
+    ):
+        from cutqc2.cutqc.cutqc.cutter import MIP_Model
 
-        cut_wire_position = 0
-        for i, instr in enumerate(self.circuit.data):
-            if cut_qubit in instr.qubits:  # we're on the right wire
-                if cut_wire_position > cut_position:
-                    self.circuit.data.insert(i, cut_instr)
-                    break
-                cut_wire_position += 1
+        n_vertices, edges, vertex_ids, id_vertices, id_to_dag_edge = (
+            self.inter_wire_dag_metadata["n_vertices"],
+            self.inter_wire_dag_metadata["edges"],
+            self.inter_wire_dag_metadata["vertex_ids"],
+            self.inter_wire_dag_metadata["id_vertices"],
+            self.inter_wire_dag_metadata["id_to_dag_edge"],
+        )
+
+        num_qubits = self.circuit.num_qubits
+        for num_subcircuit in num_subcircuits:
+            if (
+                num_subcircuit * max_subcircuit_width - (num_subcircuit - 1)
+                < num_qubits
+                or num_subcircuit > num_qubits
+                or max_cuts + 1 < num_subcircuit
+            ):
+                continue
+
+            mip_model = MIP_Model(
+                n_vertices=n_vertices,
+                edges=edges,
+                vertex_ids=vertex_ids,
+                id_vertices=id_vertices,
+                id_to_dag_edge=id_to_dag_edge,
+                num_subcircuit=num_subcircuit,
+                max_subcircuit_width=max_subcircuit_width,
+                max_subcircuit_cuts=max_subcircuit_cuts,
+                subcircuit_size_imbalance=subcircuit_size_imbalance,
+                num_qubits=num_qubits,
+                max_cuts=max_cuts,
+            )
+
+            if mip_model.solve():
+                return mip_model.cut_edges_pairs
+            else:
+                raise RuntimeError("No viable cuts found")
 
     def add_cut_at_label(self, label: str):
         """
@@ -288,3 +322,58 @@ class CutCircuit:
                 subcircuit_ops, subcircuit_qubits, subcircuit_i, self.qubit_mapping
             )
             self.subcircuits.append(subcircuit)
+
+    def cut(
+        self,
+        max_subcircuit_width: int,
+        max_cuts: int,
+        num_subcircuits: list[int],
+        max_subcircuit_cuts: int,
+        subcircuit_size_imbalance: int,
+    ):
+        cut_edges_pairs = self.find_cuts(
+            max_subcircuit_width=max_subcircuit_width,
+            max_cuts=max_cuts,
+            num_subcircuits=num_subcircuits,
+            max_subcircuit_cuts=max_subcircuit_cuts,
+            subcircuit_size_imbalance=subcircuit_size_imbalance,
+        )
+
+        self.add_cuts(cut_edges=cut_edges_pairs, generate_subcircuits=True)
+
+    def legacy_evaluate(self, num_shots_fn=None):
+        self.subcircuit_entry_probs = {}
+        for subcircuit_index in range(len(self.cut_solution)):
+            subcircuit_measured_probs = run_subcircuit_instances(
+                subcircuit=self.cut_solution[subcircuit_index],
+                subcircuit_instance_init_meas=self.cut_solution.subcircuit_instances[
+                    subcircuit_index
+                ],
+                num_shots_fn=num_shots_fn,
+            )
+            self.subcircuit_entry_probs[subcircuit_index] = attribute_shots(
+                subcircuit_measured_probs=subcircuit_measured_probs,
+                subcircuit_entries=self.cut_solution.subcircuit_entries[
+                    subcircuit_index
+                ],
+            )
+
+    def legacy_build(self, mem_limit, recursion_depth):
+        dd = DynamicDefinition(
+            compute_graph=self.cut_solution.compute_graph,
+            num_cuts=self.cut_solution.num_cuts,
+            subcircuit_entry_probs=self.subcircuit_entry_probs,
+            mem_limit=mem_limit,
+            recursion_depth=recursion_depth,
+        )
+
+        self.approximation_bins = dd.dd_bins
+        self.num_recursions = len(self.approximation_bins)
+
+    def legacy_verify(self):
+        reconstructed_prob, self.approximation_error = self.cut_solution.full_verify(
+            dd_bins=self.approximation_bins,
+        )
+        assert self.approximation_error < 10e-10, (
+            "Difference in cut circuit and uncut circuit is outside of floating point error tolerance"
+        )

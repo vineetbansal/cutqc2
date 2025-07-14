@@ -8,9 +8,10 @@ from cutqc2.cutqc.cutqc.cut_solution import CutSolution
 from cutqc2.core.cut_circuit import CutCircuit
 
 
-class MIP_Model(object):
+class MIP_Model:
     def __init__(
         self,
+        *,
         n_vertices,
         edges,
         vertex_ids,
@@ -21,15 +22,12 @@ class MIP_Model(object):
         max_subcircuit_cuts,
         subcircuit_size_imbalance,
         num_qubits,
-        max_cuts,
-        vertex_label_ids,
-        id_vertex_labels
+        max_cuts
     ):
         self.check_graph(n_vertices, edges)
         self.n_vertices = n_vertices
         self.edges = edges
         self.n_edges = len(edges)
-        self.vertex_ids = vertex_ids
         self.id_vertices = id_vertices
         self.id_to_dag_edge = id_to_dag_edge
         self.num_subcircuit = num_subcircuit
@@ -38,8 +36,6 @@ class MIP_Model(object):
         self.subcircuit_size_imbalance = math.sqrt(subcircuit_size_imbalance)
         self.num_qubits = num_qubits
         self.max_cuts = max_cuts
-        self.vertex_label_ids = vertex_label_ids
-        self.id_vertex_labels = id_vertex_labels
 
         """
         Count the number of input qubits directly connected to each node
@@ -290,7 +286,6 @@ class MIP_Model(object):
             )
 
             cut_edges_idx = []
-            cut_edges = []
             self.cut_edges_pairs = []
 
             for i in range(self.num_subcircuit):
@@ -298,7 +293,6 @@ class MIP_Model(object):
                     if abs(self.edge_var[i][j].x) > 1e-4 and j not in cut_edges_idx:
                         cut_edges_idx.append(j)
                         u, v = self.edges[j]
-                        cut_edges.append((self.id_vertices[u], self.id_vertices[v]))
 
                         self.cut_edges_pairs.append(
                             (
@@ -306,69 +300,6 @@ class MIP_Model(object):
                                 self.id_to_dag_edge[v]
                             )
                         )
-
-            self.cut_edges = cut_edges
             return True
         else:
             return False
-
-
-def find_cuts(
-    circuit,
-    max_subcircuit_width,
-    max_cuts,
-    num_subcircuits,
-    max_subcircuit_cuts,
-    subcircuit_size_imbalance,
-    verbose,
-    raise_error: bool = False,
-) -> CutCircuit | None:
-
-    cut_circuit = CutCircuit(circuit)
-    results = cut_circuit.inter_wire_dag_metadata
-
-    n_vertices, edges, vertex_ids, id_vertices, dag_edge_to_id, id_to_dag_edge, vertex_label_ids, id_vertex_labels = (
-        results["n_vertices"],
-        results["edges"],
-        results["vertex_ids"],
-        results["id_vertices"],
-        results["dag_edge_to_id"],
-        results["id_to_dag_edge"],
-        results["vertex_label_ids"],
-        results["id_vertex_labels"],
-    )
-
-    num_qubits = circuit.num_qubits
-    cut_solution = {}
-
-    for num_subcircuit in num_subcircuits:
-        if (
-            num_subcircuit * max_subcircuit_width - (num_subcircuit - 1) < num_qubits
-            or num_subcircuit > num_qubits
-            or max_cuts + 1 < num_subcircuit
-        ):
-            continue
-
-        mip_model = MIP_Model(
-            n_vertices=n_vertices,
-            edges=edges,
-            vertex_ids=vertex_ids,
-            id_vertices=id_vertices,
-            id_to_dag_edge=id_to_dag_edge,
-            num_subcircuit=num_subcircuit,
-            max_subcircuit_width=max_subcircuit_width,
-            max_subcircuit_cuts=max_subcircuit_cuts,
-            subcircuit_size_imbalance=subcircuit_size_imbalance,
-            num_qubits=num_qubits,
-            max_cuts=max_cuts,
-            vertex_label_ids=vertex_label_ids,
-            id_vertex_labels=id_vertex_labels,
-        )
-
-        if mip_model.solve():
-            cut_circuit.add_cuts(mip_model.cut_edges_pairs)
-            return cut_circuit
-
-    if raise_error:
-        raise RuntimeError("No viable cuts found")
-    return None

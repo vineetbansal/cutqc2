@@ -5,7 +5,7 @@ from cutqc2.cutqc.cutqc.evaluator import get_num_workers
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
 
 
-class DynamicDefinition(object):
+class DynamicDefinition:
     def __init__(
         self,
         compute_graph,
@@ -22,7 +22,9 @@ class DynamicDefinition(object):
         self.recursion_depth = recursion_depth
         self.dd_bins = {}
 
-    def build(self):
+        self._build()
+
+    def _build(self):
         """
         Returns
 

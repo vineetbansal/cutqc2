@@ -1,7 +1,6 @@
 import textwrap
 import pytest
 from qiskit import QuantumCircuit
-from qiskit.circuit.quantumregister import QuantumRegister, Qubit
 from cutqc2.core.cut_circuit import CutCircuit
 
 
@@ -16,44 +15,6 @@ def simple_circuit() -> QuantumCircuit:
     qc.cx(0, 2)
 
     return qc
-
-
-def test_cut_circuit_str(simple_circuit):
-    cut_circuit = CutCircuit(
-        simple_circuit,
-        cut_qubits_and_positions=[(Qubit(QuantumRegister(3, "q"), 0), 2)],
-        add_labels=False,
-    )
-    got_str = str(cut_circuit)
-    expected_str = textwrap.dedent("""
-                      ┌───┐     ┌────┐     
-            q_0: ─|0>─┤ H ├──■──┤ // ├──■──
-                      └───┘┌─┴─┐└────┘  │  
-            q_1: ─|0>──────┤ X ├────────┼──
-                           └───┘      ┌─┴─┐
-            q_2: ─|0>─────────────────┤ X ├
-                                      └───┘
-    """).strip("\n")
-    assert got_str == expected_str
-
-
-def test_labeled_cut_circuit_str(simple_circuit):
-    cut_circuit = CutCircuit(
-        simple_circuit,
-        cut_qubits_and_positions=[(Qubit(QuantumRegister(3, "q"), 0), 2)],
-        add_labels=True,
-    )
-    got_str = str(cut_circuit)
-    expected_str = textwrap.dedent("""
-                ┌──────┐ 0004 ┌────┐ 0005 
-        0: ─|0>─┤ 0003 ├──■───┤ // ├──■───
-                └──────┘┌─┴─┐ └────┘  │   
-        1: ─|0>─────────┤ X ├─────────┼───
-                        └───┘       ┌─┴─┐ 
-        2: ─|0>─────────────────────┤ X ├─
-                                    └───┘ 
-    """).strip("\n")
-    assert got_str == expected_str
 
 
 def test_cut_circuit_add_cut(simple_circuit):
