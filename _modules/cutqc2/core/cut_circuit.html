@@ -72,6 +72,8 @@
         <span class="n">circuit</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span>
         <span class="n">add_labels</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_valid</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span> <span class="o">=</span> <span class="n">circuit</span>
         <span class="k">if</span> <span class="n">add_labels</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_labeled_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
