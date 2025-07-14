@@ -60,5 +60,6 @@ class CutQC:
     def verify(self):
         reconstructed_prob, self.approximation_error = self.cut_solution.full_verify(
             dd_bins=self.approximation_bins,
-        )
+        )     
+        assert self.approximation_error < 10e-10, "Difference in cut circuit and uncut circuit is outside of floating point error tolerance"
 
