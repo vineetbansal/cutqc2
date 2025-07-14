@@ -25,7 +25,7 @@ class CutQC:
     def cut(self) -> None:
         self.cut_solution = find_cuts(
             **self.cutter_constraints, circuit=self.circuit, verbose=self.verbose, raise_error=True
-        )
+        ).cut_solution
         self.compute_graph, self.subcircuit_entries, self.subcircuit_instances = self.cut_solution.compute_graph, self.cut_solution.subcircuit_entries, self.cut_solution.subcircuit_instances
 
 

@@ -106,15 +106,17 @@ class DAGEdge:
         dest (DagNode): The destination node of the edge.
     """
 
-    def __init__(self, first: DagNode, second: DagNode):
+    def __init__(self, first: DagNode, second: DagNode, name: str = ""):
         """
         Initialize a DAGEdge between two DagNodes.
 
         Args:
             first (DagNode): The first node.
             second (DagNode): The second node.
+            name (str, optional): The name of the edge. Defaults to an empty string.
         """
         self.source, self.dest = sorted((first, second))
+        self.name = name
 
     def __str__(self):
         """
@@ -123,7 +125,7 @@ class DAGEdge:
         Returns:
             str: The string in the format 'source dest'.
         """
-        return "%s %s" % (self.source, self.dest)
+        return f"{self.source} {self.dest}"
 
     def __or__(self, other: "DAGEdge") -> tuple[DagNode, DagNode]:
         """
@@ -143,3 +145,6 @@ class DAGEdge:
                 return tuple(sorted((a, b)))
 
         raise ValueError("No common wire")
+
+    def weight(self) -> int:
+        return int(self.source.gate_index == 0) + int(self.dest.gate_index == 0)
