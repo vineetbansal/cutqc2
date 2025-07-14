@@ -1,4 +1,4 @@
-from cutqc2.cutqc.cutqc.cut_solution import CutSolution
+from cutqc2.core.cut_circuit import CutCircuit
 
 """
 The coefficients and kets used for each term in the expansion of the trace
@@ -19,10 +19,8 @@ def test_zeros():
     initializations = ["zero", "zero", "zero"]
     measurements = ["I", "comp"]  # measurements don't matter for this test
 
-    results = CutSolution.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [
-        CutSolution.convert_to_physical_init(result[0]) for result in results
-    ]
+    results = CutCircuit.get_instance_init_meas(initializations, measurements)
+    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
 
     # There are no Pauli bases - we simply get what we passed in.
     assert len(coeffs_kets) == 1
@@ -33,10 +31,8 @@ def testI():
     initializations = ["I", "zero"]
     measurements = ["I", "comp"]  # measurements don't matter for this test
 
-    results = CutSolution.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [
-        CutSolution.convert_to_physical_init(result[0]) for result in results
-    ]
+    results = CutCircuit.get_instance_init_meas(initializations, measurements)
+    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -50,10 +46,8 @@ def testX():
     initializations = ["zero", "X", "zero", "zero"]
     measurements = ["I", "comp"]  # measurements don't matter for this test
 
-    results = CutSolution.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [
-        CutSolution.convert_to_physical_init(result[0]) for result in results
-    ]
+    results = CutCircuit.get_instance_init_meas(initializations, measurements)
+    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -68,10 +62,8 @@ def testY():
     initializations = ["zero", "Y", "zero"]
     measurements = ["I", "comp"]  # measurements don't matter for this test
 
-    results = CutSolution.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [
-        CutSolution.convert_to_physical_init(result[0]) for result in results
-    ]
+    results = CutCircuit.get_instance_init_meas(initializations, measurements)
+    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -86,10 +78,8 @@ def testZ():
     initializations = ["zero", "zero", "Z", "zero"]
     measurements = ["I", "comp"]  # measurements don't matter for this test
 
-    results = CutSolution.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [
-        CutSolution.convert_to_physical_init(result[0]) for result in results
-    ]
+    results = CutCircuit.get_instance_init_meas(initializations, measurements)
+    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.

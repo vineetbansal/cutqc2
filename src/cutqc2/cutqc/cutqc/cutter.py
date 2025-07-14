@@ -4,7 +4,6 @@ from qiskit.dagcircuit import DAGOpNode
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 import gurobipy as gp
 from qiskit import QuantumCircuit, QuantumRegister
-from cutqc2.cutqc.cutqc.cut_solution import CutSolution
 from cutqc2.core.cut_circuit import CutCircuit
 
 
