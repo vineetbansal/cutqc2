@@ -44,22 +44,8 @@
 <span id="cutqc2-core-cut-circuit-module"></span><h2>cutqc2.core.cut_circuit module<a class="headerlink" href="#module-cutqc2.core.cut_circuit" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">CutCircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cut_qubits_and_positions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">CutCircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut">
-<span class="sig-name descname"><span class="pre">add_cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut_qubit_and_position</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut" title="Link to this definition">¶</a></dt>
-<dd><p>Add a cut to the circuit at the specified position.
-:type cut_qubit_and_position: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Qubit</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>
-:param cut_qubit_and_position: A tuple containing the Qubit to cut and the position</p>
-<blockquote>
-<div><p>in the wire where the cut should be made.
-The position is a 0-indexed integer indicating the gate position
-on the wire ‘after’ which the cut should be made.
-This tuple format is what legacy CutQC code mostly uses.</p>
-</div></blockquote>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut_at_label">
 <span class="sig-name descname"><span class="pre">add_cut_at_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut_at_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut_at_label" title="Link to this definition">¶</a></dt>
@@ -71,6 +57,21 @@ This tuple format is what legacy CutQC code mostly uses.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cuts">
 <span class="sig-name descname"><span class="pre">add_cuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut_edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_subcircuits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cuts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cuts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.check_valid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">check_valid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.check_valid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.check_valid" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.cut">
+<span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.cut" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.find_cuts">
+<span class="sig-name descname"><span class="pre">find_cuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.find_cuts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.find_cuts" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -110,6 +111,21 @@ preserve gates that span two wires.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.legacy_build">
+<span class="sig-name descname"><span class="pre">legacy_build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mem_limit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursion_depth</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.legacy_build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.legacy_build" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.legacy_evaluate">
+<span class="sig-name descname"><span class="pre">legacy_evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_shots_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.legacy_evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.legacy_evaluate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.legacy_verify">
+<span class="sig-name descname"><span class="pre">legacy_verify</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.legacy_verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.legacy_verify" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
