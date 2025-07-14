@@ -32,6 +32,8 @@ class CutCircuit:
         circuit: QuantumCircuit,
         add_labels: bool = True,
     ):
+        self.check_valid(circuit)
+
         self.raw_circuit = circuit
         if add_labels:
             self.circuit = self.get_labeled_circuit(circuit.copy())
