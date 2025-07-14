@@ -428,11 +428,24 @@ class CutCircuit:
         self.approximation_bins = dd.dd_bins
         self.num_recursions = len(self.approximation_bins)
 
-    def legacy_verify(self):
-        reconstructed_prob, self.approximation_error = self.full_verify(
-            dd_bins=self.approximation_bins,
+    def legacy_verify(self, atol: float = 1e-10):
+        ground_truth = evaluate_circ(
+            circuit=self.raw_circuit, backend="statevector_simulator"
         )
-        assert self.approximation_error < 10e-10, (
+        subcircuit_out_qubits = self.get_reconstruction_qubit_order()
+        reconstructed_prob = read_dd_bins(
+            subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=self.approximation_bins
+        )
+        real_probability = quasi_to_real(
+            quasiprobability=reconstructed_prob, mode="nearest"
+        )
+        approximation_error = (
+            MSE(target=ground_truth, obs=real_probability)
+            * 2**self.circuit.num_qubits
+            / np.linalg.norm(ground_truth) ** 2
+        )
+
+        assert approximation_error < atol, (
             "Difference in cut circuit and uncut circuit is outside of floating point error tolerance"
         )
 
@@ -571,21 +584,3 @@ class CutCircuit:
                 x[1] for x in subcircuit_out_qubits[subcircuit_idx]
             ]
         return subcircuit_out_qubits
-
-    def full_verify(self, dd_bins):
-        ground_truth = evaluate_circ(
-            circuit=self.raw_circuit, backend="statevector_simulator"
-        )
-        subcircuit_out_qubits = self.get_reconstruction_qubit_order()
-        reconstructed_prob = read_dd_bins(
-            subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=dd_bins
-        )
-        real_probability = quasi_to_real(
-            quasiprobability=reconstructed_prob, mode="nearest"
-        )
-        approximation_error = (
-            MSE(target=ground_truth, obs=real_probability)
-            * 2**self.circuit.num_qubits
-            / np.linalg.norm(ground_truth) ** 2
-        )
-        return reconstructed_prob, approximation_error
