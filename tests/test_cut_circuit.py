@@ -2,6 +2,7 @@ import textwrap
 import pytest
 from qiskit import QuantumCircuit
 from cutqc2.core.cut_circuit import CutCircuit
+from cutqc2.core.dag import DagNode, DAGEdge
 
 
 @pytest.fixture(scope="module")
@@ -59,3 +60,43 @@ def test_cut_circuit_generate_subcircuits(simple_circuit):
                  0005 
     """).strip("\n")
     assert second_subcircuit_str == expected_str
+
+
+def test_cut_circuit_find_cuts(simple_circuit):
+    cut_circuit = CutCircuit(simple_circuit)
+    cut_edges_pairs = cut_circuit.find_cuts(
+        max_subcircuit_width=2,
+        max_cuts=1,
+        num_subcircuits=[2],
+        max_subcircuit_cuts=1,
+        subcircuit_size_imbalance=1,
+    )
+
+    assert len(cut_edges_pairs) == 1
+    cut_edge0, cut_edge1 = cut_edges_pairs[0]
+    assert str(cut_edge0) == "q[0]0 q[1]0"
+    assert str(cut_edge1) == "q[0]1 q[2]0"
+
+
+def test_cut_circuit_verify(simple_circuit):
+    cut_circuit = CutCircuit(simple_circuit)
+    cut_edge_pairs = [
+        (
+            DAGEdge(
+                DagNode(wire_index=0, gate_index=0),
+                DagNode(wire_index=1, gate_index=0),
+                name="0004",
+            ),
+            DAGEdge(
+                DagNode(wire_index=0, gate_index=1),
+                DagNode(wire_index=2, gate_index=0),
+                name="0005",
+            ),
+        )
+    ]
+
+    cut_circuit.add_cuts(cut_edge_pairs)
+
+    cut_circuit.legacy_evaluate(num_shots_fn=None)
+    cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
+    cut_circuit.legacy_verify()
