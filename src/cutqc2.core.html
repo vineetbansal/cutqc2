@@ -65,6 +65,11 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.convert_to_physical_init">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_to_physical_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.convert_to_physical_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.convert_to_physical_init" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.cut">
 <span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.cut" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -72,6 +77,11 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.find_cuts">
 <span class="sig-name descname"><span class="pre">find_cuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.find_cuts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.find_cuts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.full_verify">
+<span class="sig-name descname"><span class="pre">full_verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dd_bins</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.full_verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.full_verify" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -88,6 +98,11 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_instance_init_meas">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_instance_init_meas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initializations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurements</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_instance_init_meas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_instance_init_meas" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_inter_wire_dag">
@@ -113,6 +128,13 @@ preserve gates that span two wires.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_reconstruction_qubit_order">
+<span class="sig-name descname"><span class="pre">get_reconstruction_qubit_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_reconstruction_qubit_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_reconstruction_qubit_order" title="Link to this definition">¶</a></dt>
+<dd><p>Get the output qubit in the full circuit for each subcircuit
+Qiskit orders the full circuit output in descending order of qubits</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.legacy_build">
 <span class="sig-name descname"><span class="pre">legacy_build</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mem_limit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursion_depth</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.legacy_build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.legacy_build" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -125,6 +147,22 @@ preserve gates that span two wires.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.legacy_verify">
 <span class="sig-name descname"><span class="pre">legacy_verify</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.legacy_verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.legacy_verify" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.populate_annotated_subcircuits">
+<span class="sig-name descname"><span class="pre">populate_annotated_subcircuits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.populate_annotated_subcircuits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.populate_annotated_subcircuits" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.populate_compute_graph">
+<span class="sig-name descname"><span class="pre">populate_compute_graph</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.populate_compute_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.populate_compute_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Generate the connection graph among subcircuits</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.populate_subcircuit_entries">
+<span class="sig-name descname"><span class="pre">populate_subcircuit_entries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.populate_subcircuit_entries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.populate_subcircuit_entries" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
