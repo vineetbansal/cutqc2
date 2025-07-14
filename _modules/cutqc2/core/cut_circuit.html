@@ -509,11 +509,24 @@
 
 <div class="viewcode-block" id="CutCircuit.legacy_verify">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.legacy_verify">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">legacy_verify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">reconstructed_prob</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">approximation_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_verify</span><span class="p">(</span>
-            <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">legacy_verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">):</span>
+        <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">evaluate_circ</span><span class="p">(</span>
+            <span class="n">circuit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;statevector_simulator&quot;</span>
         <span class="p">)</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">approximation_error</span> <span class="o">&lt;</span> <span class="mf">10e-10</span><span class="p">,</span> <span class="p">(</span>
+        <span class="n">subcircuit_out_qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstruction_qubit_order</span><span class="p">()</span>
+        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
+            <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="n">subcircuit_out_qubits</span><span class="p">,</span> <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span>
+        <span class="p">)</span>
+        <span class="n">real_probability</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
+            <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
+        <span class="p">)</span>
+        <span class="n">approximation_error</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">MSE</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">real_probability</span><span class="p">)</span>
+            <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span>
+            <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">approximation_error</span> <span class="o">&lt;</span> <span class="n">atol</span><span class="p">,</span> <span class="p">(</span>
             <span class="s2">&quot;Difference in cut circuit and uncut circuit is outside of floating point error tolerance&quot;</span>
         <span class="p">)</span></div>
 
@@ -664,27 +677,6 @@
                 <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span>
             <span class="p">]</span>
         <span class="k">return</span> <span class="n">subcircuit_out_qubits</span></div>
-
-
-<div class="viewcode-block" id="CutCircuit.full_verify">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.full_verify">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">full_verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dd_bins</span><span class="p">):</span>
-        <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">evaluate_circ</span><span class="p">(</span>
-            <span class="n">circuit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;statevector_simulator&quot;</span>
-        <span class="p">)</span>
-        <span class="n">subcircuit_out_qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstruction_qubit_order</span><span class="p">()</span>
-        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
-            <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="n">subcircuit_out_qubits</span><span class="p">,</span> <span class="n">dd_bins</span><span class="o">=</span><span class="n">dd_bins</span>
-        <span class="p">)</span>
-        <span class="n">real_probability</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
-            <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
-        <span class="p">)</span>
-        <span class="n">approximation_error</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">MSE</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">real_probability</span><span class="p">)</span>
-            <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span>
-            <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">approximation_error</span></div>
 </div>
 
 </pre></div>
