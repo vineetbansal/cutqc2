@@ -33,16 +33,16 @@ def test_measure_state2():
 def test_measure_state3():
     # Eq. 3 in paper:
     #   xx0, xx1 -> +xx  if M_last = I
-    # So we have result = (+1, 0b10) = (1, 2)
-    sigma, effective_state = measure_state(0b100, ["I", "comp", "comp"])
+    # So we have result = (+1, 0b00) = (1, 0)
+    sigma, effective_state = measure_state(0b100, ["comp", "comp", "I"])
     assert sigma == 1
-    assert effective_state == 2
+    assert effective_state == 0
 
 
 def test_measure_state4():
     # Eq. 3 in paper:
     #   xx1 -> -xx  if M_last != I
     # So we have result = (-1, 0b110) = (-1, 6)
-    sigma, effective_state = measure_state(0b1101, ["Z", "comp", "comp", "comp"])
+    sigma, effective_state = measure_state(0b1110, ["comp", "comp", "comp", "Z"])
     assert sigma == -1
     assert effective_state == 6
