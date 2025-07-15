@@ -47,11 +47,13 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">CutCircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut_at_label">
-<span class="sig-name descname"><span class="pre">add_cut_at_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut_at_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut_at_label" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut">
+<span class="sig-name descname"><span class="pre">add_cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wire_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut" title="Link to this definition">¶</a></dt>
 <dd><p>Add a cut to the circuit at the position of the instruction with the specified label.
 :type label: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>
-:param label: The label of the instruction after which the cut should be made.</p>
+:param label: The label of the instruction after which the cut should be made.
+:type wire_index: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>
+:param wire_index: The index of the wire where the cut should be made.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -174,7 +176,7 @@ Qiskit orders the full circuit output in descending order of qubits</p>
 <span id="cutqc2-core-dag-module"></span><h2>cutqc2.core.dag module<a class="headerlink" href="#module-cutqc2.core.dag" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.dag.DAGEdge">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dag.</span></span><span class="sig-name descname"><span class="pre">DAGEdge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DAGEdge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DAGEdge" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dag.</span></span><span class="sig-name descname"><span class="pre">DAGEdge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DAGEdge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DAGEdge" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Represents an edge in a quantum circuit DAG, connecting two DagNodes.</p>
 <dl class="py attribute">
@@ -213,7 +215,7 @@ Qiskit orders the full circuit output in descending order of qubits</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.dag.DagNode">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dag.</span></span><span class="sig-name descname"><span class="pre">DagNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wire_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">register_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'q'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DagNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DagNode" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dag.</span></span><span class="sig-name descname"><span class="pre">DagNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wire_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'q'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DagNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DagNode" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Represents a node in a quantum circuit DAG (Directed Acyclic Graph),
 corresponding to a specific gate on a specific wire (qubit/register).</p>
@@ -243,9 +245,9 @@ Note: <cite>gate_index</cite> assumes that only inter-wire gates are considered.
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="cutqc2.core.dag.DagNode.register_name">
-<span class="sig-name descname"><span class="pre">register_name</span></span><a class="headerlink" href="#cutqc2.core.dag.DagNode.register_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the register (default ‘q’).</p>
+<dt class="sig sig-object py" id="cutqc2.core.dag.DagNode.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#cutqc2.core.dag.DagNode.name" title="Link to this definition">¶</a></dt>
+<dd><p>The name of the node (default ‘q’).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>

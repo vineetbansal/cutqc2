@@ -84,6 +84,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_inter_wire_dag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dag_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag</span><span class="p">)</span>
 
+        <span class="c1"># location of cuts, as (&lt;instruction_label&gt;, &lt;wire_index&gt;) tuples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="p">)</span>
 
@@ -184,16 +187,15 @@
 
             <span class="n">dag_edge</span> <span class="o">=</span> <span class="n">DAGEdge</span><span class="p">(</span>
                 <span class="n">DagNode</span><span class="p">(</span>
-                    <span class="n">register_name</span><span class="o">=</span><span class="n">arg0</span><span class="o">.</span><span class="n">_register</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">vertex</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
                     <span class="n">wire_index</span><span class="o">=</span><span class="n">arg0</span><span class="o">.</span><span class="n">_index</span><span class="p">,</span>
                     <span class="n">gate_index</span><span class="o">=</span><span class="n">qubit_gate_counter</span><span class="p">[</span><span class="n">arg0</span><span class="p">],</span>
                 <span class="p">),</span>
                 <span class="n">DagNode</span><span class="p">(</span>
-                    <span class="n">register_name</span><span class="o">=</span><span class="n">arg1</span><span class="o">.</span><span class="n">_register</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">vertex</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
                     <span class="n">wire_index</span><span class="o">=</span><span class="n">arg1</span><span class="o">.</span><span class="n">_index</span><span class="p">,</span>
                     <span class="n">gate_index</span><span class="o">=</span><span class="n">qubit_gate_counter</span><span class="p">[</span><span class="n">arg1</span><span class="p">],</span>
                 <span class="p">),</span>
-                <span class="n">name</span><span class="o">=</span><span class="n">vertex</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">vertex_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">dag_edge</span><span class="p">)</span>
 
@@ -332,21 +334,31 @@
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No viable cuts found&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.add_cut_at_label">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.add_cut_at_label">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_cut_at_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<div class="viewcode-block" id="CutCircuit.add_cut">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.add_cut">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a cut to the circuit at the position of the instruction with the specified label.</span>
 <span class="sd">        Args:</span>
 <span class="sd">            label: The label of the instruction after which the cut should be made.</span>
+<span class="sd">            wire_index: The index of the wire where the cut should be made.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">instr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">instr</span><span class="o">.</span><span class="n">operation</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
-                <span class="n">cut_qubit</span> <span class="o">=</span> <span class="n">instr</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">cut_qubit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="n">wire_index</span><span class="p">]</span>
                 <span class="n">cut_instr</span> <span class="o">=</span> <span class="n">CircuitInstruction</span><span class="p">(</span><span class="n">WireCutGate</span><span class="p">(),</span> <span class="n">qubits</span><span class="o">=</span><span class="p">(</span><span class="n">cut_qubit</span><span class="p">,))</span>
                 <span class="c1"># insert the cut instruction right after the current instruction</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cut_instr</span><span class="p">)</span>
-                <span class="k">break</span></div>
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Label &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39; or wire </span><span class="si">{</span><span class="n">wire_index</span><span class="si">}</span><span class="s2"> not found in the circuit. Cannot add cut.&quot;</span>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.add_cuts">
@@ -366,7 +378,7 @@
 
         <span class="k">for</span> <span class="n">cut_edge</span> <span class="ow">in</span> <span class="n">cut_edges</span><span class="p">:</span>
             <span class="n">edge0</span><span class="p">,</span> <span class="n">edge1</span> <span class="o">=</span> <span class="n">cut_edge</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">add_cut_at_label</span><span class="p">(</span><span class="n">edge0</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_cut</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">wire_index</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">generate_subcircuits</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_subcircuits</span><span class="p">()</span>
