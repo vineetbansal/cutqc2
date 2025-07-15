@@ -317,14 +317,6 @@ class CutCircuit:
         if generate_subcircuits:
             self.generate_subcircuits()
 
-        # TODO: The legacy format for `complete_path_map` is a bit convoluted.
-        # We should simply stick with `self.qubit_mapping` which is simpler.
-        complete_path_map = {
-            k: [{"subcircuit_idx": _k, "subcircuit_qubit": _v} for _k, _v in v.items()]
-            for k, v in self.qubit_mapping.items()
-        }
-
-        self.complete_path_map = complete_path_map
         self.num_cuts = len(cut_edges)
         self.annotated_subcircuits = {}  # populated by `populate_annotated_subcircuits()`
 
@@ -467,29 +459,28 @@ class CutCircuit:
         """
         annotated_subcircuits = self.annotated_subcircuits
         subcircuits = self.subcircuits
-        complete_path_map = self.complete_path_map
 
-        compute_graph = ComputeGraph()
+        self.compute_graph = ComputeGraph()
         for subcircuit_idx in annotated_subcircuits:
             subcircuit_attributes = deepcopy(annotated_subcircuits[subcircuit_idx])
             subcircuit_attributes["subcircuit"] = subcircuits[subcircuit_idx]
-            compute_graph.add_node(
+            self.compute_graph.add_node(
                 subcircuit_idx=subcircuit_idx, attributes=subcircuit_attributes
             )
-        for circuit_qubit in complete_path_map:
-            path = complete_path_map[circuit_qubit]
-            for counter in range(len(path) - 1):
-                upstream_subcircuit_idx = path[counter]["subcircuit_idx"]
-                downstream_subcircuit_idx = path[counter + 1]["subcircuit_idx"]
-                compute_graph.add_edge(
-                    u_for_edge=upstream_subcircuit_idx,
-                    v_for_edge=downstream_subcircuit_idx,
+
+        for qubit, mappings in self.qubit_mapping.items():
+            mappings_keys = list(mappings.keys())
+            for upstream_subcircuit_index, downstream_subcircuit_index in zip(
+                mappings_keys, mappings_keys[1:]
+            ):
+                self.compute_graph.add_edge(
+                    u_for_edge=upstream_subcircuit_index,
+                    v_for_edge=downstream_subcircuit_index,
                     attributes={
-                        "O_qubit": path[counter]["subcircuit_qubit"],
-                        "rho_qubit": path[counter + 1]["subcircuit_qubit"],
+                        "O_qubit": mappings[upstream_subcircuit_index],
+                        "rho_qubit": mappings[downstream_subcircuit_index],
                     },
                 )
-        self.compute_graph = compute_graph
 
     def populate_subcircuit_entries(self):
         compute_graph = self.compute_graph
@@ -564,11 +555,12 @@ class CutCircuit:
                 "effective": subcircuit.num_qubits,
             }
 
-        for input_qubit, path in self.complete_path_map.items():
-            if len(path) > 1:
-                for j, O_qubit in enumerate(path[:-1]):
-                    from_subcircuit_index = O_qubit["subcircuit_idx"]
-                    self.annotated_subcircuits[from_subcircuit_index]["effective"] -= 1
+        for mappings in self.qubit_mapping.values():
+            subcircuit_indices = list(mappings.keys())
+            # all but the last subcircuit index in subcircuit_indices
+            # has their effective qubits reduce by 1
+            for subcircuit_index in subcircuit_indices[:-1]:
+                self.annotated_subcircuits[subcircuit_index]["effective"] -= 1
 
     def get_reconstruction_qubit_order(self):
         """
@@ -578,14 +570,16 @@ class CutCircuit:
         subcircuit_out_qubits = {
             subcircuit_idx: [] for subcircuit_idx in range(len(self))
         }
-        for input_qubit, path in self.complete_path_map.items():
-            output_qubit = path[-1]
-            subcircuit_out_qubits[output_qubit["subcircuit_idx"]].append(
+
+        for qubit, mappings in self.qubit_mapping.items():
+            output_subcircuit_index, output_qubit = list(mappings.items())[-1]
+            subcircuit_out_qubits[output_subcircuit_index].append(
                 (
-                    output_qubit["subcircuit_qubit"],
-                    self.circuit.qubits.index(input_qubit),
+                    output_qubit,
+                    self.circuit.qubits.index(qubit),
                 )
             )
+
         for subcircuit_idx in subcircuit_out_qubits:
             subcircuit_out_qubits[subcircuit_idx] = sorted(
                 subcircuit_out_qubits[subcircuit_idx],
