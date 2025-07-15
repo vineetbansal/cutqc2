@@ -20,7 +20,7 @@ def simple_circuit() -> QuantumCircuit:
 
 def test_cut_circuit_add_cut(simple_circuit):
     cut_circuit = CutCircuit(simple_circuit)
-    cut_circuit.add_cut_at_label("0004")
+    cut_circuit.add_cut("0004", 0)
     got_str = str(cut_circuit)
     expected_str = textwrap.dedent("""
                 ┌──────┐ 0004 ┌────┐ 0005 
@@ -36,7 +36,7 @@ def test_cut_circuit_add_cut(simple_circuit):
 
 def test_cut_circuit_generate_subcircuits(simple_circuit):
     cut_circuit = CutCircuit(simple_circuit)
-    cut_circuit.add_cut_at_label("0004")
+    cut_circuit.add_cut("0004", 0)
     cut_circuit.generate_subcircuits()
 
     assert len(cut_circuit) == 2
@@ -74,8 +74,8 @@ def test_cut_circuit_find_cuts(simple_circuit):
 
     assert len(cut_edges_pairs) == 1
     cut_edge0, cut_edge1 = cut_edges_pairs[0]
-    assert str(cut_edge0) == "q[0]0 q[1]0"
-    assert str(cut_edge1) == "q[0]1 q[2]0"
+    assert str(cut_edge0) == "0004[0]0 0004[1]0"
+    assert str(cut_edge1) == "0005[0]1 0005[2]0"
 
 
 def test_cut_circuit_verify(simple_circuit):
@@ -83,20 +83,52 @@ def test_cut_circuit_verify(simple_circuit):
     cut_edge_pairs = [
         (
             DAGEdge(
-                DagNode(wire_index=0, gate_index=0),
-                DagNode(wire_index=1, gate_index=0),
-                name="0004",
+                DagNode(wire_index=0, gate_index=0, name="0004"),
+                DagNode(wire_index=1, gate_index=0, name="0004"),
             ),
             DAGEdge(
-                DagNode(wire_index=0, gate_index=1),
-                DagNode(wire_index=2, gate_index=0),
-                name="0005",
+                DagNode(wire_index=0, gate_index=1, name="0005"),
+                DagNode(wire_index=2, gate_index=0, name="0005"),
             ),
         )
     ]
 
     cut_circuit.add_cuts(cut_edge_pairs)
 
+    cut_circuit.legacy_evaluate(num_shots_fn=None)
+    cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
+    cut_circuit.legacy_verify()
+
+
+def test_cut_circuit_figure4_cut(figure_4_qiskit_circuit):
+    cut_circuit = CutCircuit(figure_4_qiskit_circuit)
+    cut_circuit.cut(
+        max_subcircuit_width=3,
+        max_subcircuit_cuts=2,
+        subcircuit_size_imbalance=3,
+        max_cuts=1,
+        num_subcircuits=[2],
+    )
+
+    assert cut_circuit.cuts == [("0014", 2)]
+
+
+def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
+    cut_circuit = CutCircuit(figure_4_qiskit_circuit)
+    cut_circuit.add_cuts(
+        [
+            (
+                DAGEdge(
+                    DagNode(wire_index=0, gate_index=1, name="0014"),
+                    DagNode(wire_index=2, gate_index=0, name="0014"),
+                ),
+                DAGEdge(
+                    DagNode(wire_index=2, gate_index=1, name="0018"),
+                    DagNode(wire_index=4, gate_index=0, name="0018"),
+                ),
+            )
+        ]
+    )
     cut_circuit.legacy_evaluate(num_shots_fn=None)
     cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
     cut_circuit.legacy_verify()

@@ -44,6 +44,9 @@ class CutCircuit:
         self.inter_wire_dag = self.get_inter_wire_dag(self.circuit)
         self.inter_wire_dag_metadata = self.get_dag_metadata(self.inter_wire_dag)
 
+        # location of cuts, as (<instruction_label>, <wire_index>) tuples
+        self.cuts: list[tuple[str, int]] = []
+
     def __str__(self):
         return str(self.circuit)
 
@@ -133,16 +136,15 @@ class CutCircuit:
 
             dag_edge = DAGEdge(
                 DagNode(
-                    register_name=arg0._register.name,
+                    name=vertex.label,
                     wire_index=arg0._index,
                     gate_index=qubit_gate_counter[arg0],
                 ),
                 DagNode(
-                    register_name=arg1._register.name,
+                    name=vertex.label,
                     wire_index=arg1._index,
                     gate_index=qubit_gate_counter[arg1],
                 ),
-                name=vertex.label,
             )
             vertex_name = str(dag_edge)
 
@@ -271,19 +273,29 @@ class CutCircuit:
             else:
                 raise RuntimeError("No viable cuts found")
 
-    def add_cut_at_label(self, label: str):
+    def add_cut(self, label: str, wire_index: int):
         """
         Add a cut to the circuit at the position of the instruction with the specified label.
         Args:
             label: The label of the instruction after which the cut should be made.
+            wire_index: The index of the wire where the cut should be made.
         """
+        found = False
         for i, instr in enumerate(self.circuit.data):
             if instr.operation.label == label:
-                cut_qubit = instr.qubits[0]
+                cut_qubit = self.circuit.qubits[wire_index]
                 cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
                 # insert the cut instruction right after the current instruction
                 self.circuit.data.insert(i + 1, cut_instr)
+                found = True
                 break
+
+        if found:
+            self.cuts.append((label, wire_index))
+        else:
+            raise ValueError(
+                f"Label '{label}' or wire {wire_index} not found in the circuit. Cannot add cut."
+            )
 
     def add_cuts(
         self,
@@ -300,7 +312,7 @@ class CutCircuit:
 
         for cut_edge in cut_edges:
             edge0, edge1 = cut_edge
-            self.add_cut_at_label(edge0.name)
+            self.add_cut(p.name, p.wire_index)
 
         if generate_subcircuits:
             self.generate_subcircuits()

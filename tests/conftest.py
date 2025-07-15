@@ -3,7 +3,7 @@ from qiskit import QuantumCircuit
 import pytest
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def figure_4_qiskit_circuit():
     qc = QuantumCircuit(5)
     qc.reset(0)
@@ -40,7 +40,5 @@ def figure_4_qiskit_circuit():
     qc.h(2)
     qc.h(3)
     qc.h(4)
-
-    qc.measure_all()
 
     return qc

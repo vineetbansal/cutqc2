@@ -70,6 +70,8 @@ def test_kernel_src(figure_4_qiskit_circuit):
 
 
 def test_kernel_shot_distribution(figure_4_qiskit_circuit):
+    figure_4_qiskit_circuit.measure_all()
+
     shots = 1_000_000
     qiskit_result = (
         StatevectorSampler().run([figure_4_qiskit_circuit], shots=shots).result()

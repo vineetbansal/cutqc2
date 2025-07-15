@@ -15,30 +15,30 @@ class DagNode:
         wire_index (int): The index of the wire (qubit/register).
         gate_index (int): The index of the gate on the wire.
           Note: `gate_index` assumes that only inter-wire gates are considered.
-        register_name (str): The name of the register (default 'q').
+        name (str): The name of the node (default 'q').
     """
 
-    def __init__(self, wire_index: int, gate_index: int, register_name: str = "q"):
+    def __init__(self, wire_index: int, gate_index: int, name: str = "q"):
         """
         Initialize a DagNode.
 
         Args:
             wire_index (int): The index of the wire (qubit/register).
             gate_index (int): The index of the gate on the wire.
-            register_name (str, optional): The name of the register. Defaults to 'q'.
+            name (str, optional): The name of the node. Defaults to 'q'.
         """
         self.wire_index = wire_index
         self.gate_index = gate_index
-        self.register_name = register_name
+        self.name = name
 
     def __str__(self):
         """
         Return a string representation of the DagNode.
 
         Returns:
-            str: The string in the format 'register_name[wire_index]gate_index'.
+            str: The string in the format 'name[wire_index]gate_index'.
         """
-        return "%s[%d]%d" % (self.register_name, self.wire_index, self.gate_index)
+        return "%s[%d]%d" % (self.name, self.wire_index, self.gate_index)
 
     def __lt__(self, other: "DagNode"):
         """
@@ -106,17 +106,15 @@ class DAGEdge:
         dest (DagNode): The destination node of the edge.
     """
 
-    def __init__(self, first: DagNode, second: DagNode, name: str = ""):
+    def __init__(self, first: DagNode, second: DagNode):
         """
         Initialize a DAGEdge between two DagNodes.
 
         Args:
             first (DagNode): The first node.
             second (DagNode): The second node.
-            name (str, optional): The name of the edge. Defaults to an empty string.
         """
         self.source, self.dest = sorted((first, second))
-        self.name = name
 
     def __str__(self):
         """
