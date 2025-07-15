@@ -561,7 +561,7 @@ class CutCircuit:
             for subcircuit_index in subcircuit_indices[:-1]:
                 self.annotated_subcircuits[subcircuit_index]["effective"] -= 1
 
-    def get_reconstruction_qubit_order(self):
+    def get_reconstruction_qubit_order(self) -> dict[int, list[int]]:
         """
         Get the output qubit in the full circuit for each subcircuit
         Qiskit orders the full circuit output in descending order of qubits

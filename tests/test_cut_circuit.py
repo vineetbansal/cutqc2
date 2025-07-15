@@ -113,6 +113,26 @@ def test_cut_circuit_figure4_cut(figure_4_qiskit_circuit):
     assert cut_circuit.cuts == [("0014", 2)]
 
 
+def test_cut_circuit_figure4_reconstruction_order(figure_4_qiskit_circuit):
+    cut_circuit = CutCircuit(figure_4_qiskit_circuit)
+    cut_circuit.add_cuts(
+        [
+            (
+                DAGEdge(
+                    DagNode(wire_index=0, gate_index=1, name="0014"),
+                    DagNode(wire_index=2, gate_index=0, name="0014"),
+                ),
+                DAGEdge(
+                    DagNode(wire_index=2, gate_index=1, name="0018"),
+                    DagNode(wire_index=4, gate_index=0, name="0018"),
+                ),
+            )
+        ]
+    )
+    reconstruction_qubit_order = cut_circuit.get_reconstruction_qubit_order()
+    assert reconstruction_qubit_order == {0: [1, 0], 1: [2, 4, 3]}
+
+
 def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
     cut_circuit = CutCircuit(figure_4_qiskit_circuit)
     cut_circuit.add_cuts(
