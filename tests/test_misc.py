@@ -1,4 +1,5 @@
-from cutqc2.cutqc.cutqc.evaluator import measure_state
+import numpy as np
+from cutqc2.cutqc.cutqc.evaluator import measure_state, measure_prob
 
 """
 sigma, effective_state = measure_state(<unmeasured_state>, <measurement_bases>)
@@ -46,3 +47,22 @@ def test_measure_state4():
     sigma, effective_state = measure_state(0b1110, ["comp", "comp", "comp", "Z"])
     assert sigma == -1
     assert effective_state == 6
+
+
+def test_measure_prob0():
+    # We go from a 2^n probability vector for a subcircuit
+    # to a 2^(n-1) "quasi"-probability vector
+    result = measure_prob(
+        [
+            0.25,  # 000 -> +0.25  for 00
+            0,  # 001 -> +0.00  for 01
+            0,  # 010 -> +0.00  for 10
+            0.25,  # 011 -> +0.25  for 11
+            0.125,  # 100 -> -0.125 for 00
+            0.125,  # 101 -> -0.125 for 01
+            0.125,  # 110 -> -0.125 for 10
+            0.125,  # 111 -> -0.125 for 11
+        ],
+        ["comp", "comp", "Z"],
+    )
+    assert np.allclose(result, [0.125, -0.125, -0.125, 0.125])
