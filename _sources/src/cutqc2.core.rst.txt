@@ -4,14 +4,6 @@ cutqc2.core package
 Submodules
 ----------
 
-cutqc2.core.cut\_circuit module
--------------------------------
-
-.. automodule:: cutqc2.core.cut_circuit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 cutqc2.core.dag module
 ----------------------
 
