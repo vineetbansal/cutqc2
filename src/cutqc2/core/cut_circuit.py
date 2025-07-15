@@ -405,7 +405,7 @@ class CutCircuit:
 
         self.add_cuts(cut_edges=cut_edges_pairs, generate_subcircuits=True)
 
-    def legacy_evaluate(self, num_shots_fn=None):
+    def legacy_evaluate(self):
         self.subcircuit_entry_probs = {}
         for subcircuit_index in range(len(self)):
             subcircuit_measured_probs = run_subcircuit_instances(
@@ -413,7 +413,6 @@ class CutCircuit:
                 subcircuit_instance_init_meas=self.subcircuit_instances[
                     subcircuit_index
                 ],
-                num_shots_fn=num_shots_fn,
             )
             self.subcircuit_entry_probs[subcircuit_index] = attribute_shots(
                 subcircuit_measured_probs=subcircuit_measured_probs,

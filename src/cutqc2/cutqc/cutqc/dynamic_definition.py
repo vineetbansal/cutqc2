@@ -1,7 +1,6 @@
 import itertools, copy, pickle, subprocess
 import numpy as np
 
-from cutqc2.cutqc.cutqc.evaluator import get_num_workers
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
 
 

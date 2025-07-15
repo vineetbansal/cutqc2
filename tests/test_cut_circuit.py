@@ -129,6 +129,6 @@ def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
             )
         ]
     )
-    cut_circuit.legacy_evaluate(num_shots_fn=None)
+    cut_circuit.legacy_evaluate()
     cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
     cut_circuit.legacy_verify()
