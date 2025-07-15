@@ -95,7 +95,7 @@ def test_cut_circuit_verify(simple_circuit):
 
     cut_circuit.add_cuts(cut_edge_pairs)
 
-    cut_circuit.legacy_evaluate(num_shots_fn=None)
+    cut_circuit.legacy_evaluate()
     cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
     cut_circuit.legacy_verify()
 
