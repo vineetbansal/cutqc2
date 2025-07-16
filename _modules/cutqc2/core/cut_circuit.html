@@ -226,62 +226,47 @@
         <span class="p">}</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.get_instance_init_meas">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_instance_init_meas">[docs]</a>
+<div class="viewcode-block" id="CutCircuit.get_initializations">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_initializations">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance_init_meas</span><span class="p">(</span><span class="n">initializations</span><span class="p">,</span> <span class="n">measurements</span><span class="p">):</span>
-        <span class="n">init_combinations</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">initialization</span> <span class="ow">in</span> <span class="n">initializations</span><span class="p">:</span>
-            <span class="k">match</span> <span class="n">initialization</span><span class="p">:</span>
-                <span class="k">case</span> <span class="s2">&quot;zero&quot;</span><span class="p">:</span>
-                    <span class="n">init_combinations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s2">&quot;zero&quot;</span><span class="p">])</span>
-                <span class="k">case</span> <span class="s2">&quot;I&quot;</span><span class="p">:</span>
-                    <span class="n">init_combinations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s2">&quot;+zero&quot;</span><span class="p">,</span> <span class="s2">&quot;+one&quot;</span><span class="p">])</span>
-                <span class="k">case</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
-                    <span class="n">init_combinations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s2">&quot;2plus&quot;</span><span class="p">,</span> <span class="s2">&quot;-zero&quot;</span><span class="p">,</span> <span class="s2">&quot;-one&quot;</span><span class="p">])</span>
-                <span class="k">case</span> <span class="s2">&quot;Y&quot;</span><span class="p">:</span>
-                    <span class="n">init_combinations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s2">&quot;2plusI&quot;</span><span class="p">,</span> <span class="s2">&quot;-zero&quot;</span><span class="p">,</span> <span class="s2">&quot;-one&quot;</span><span class="p">])</span>
-                <span class="k">case</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
-                    <span class="n">init_combinations</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s2">&quot;+zero&quot;</span><span class="p">,</span> <span class="s2">&quot;-one&quot;</span><span class="p">])</span>
-                <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Illegal initialization symbol :&quot;</span><span class="p">,</span> <span class="n">initialization</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_initializations</span><span class="p">(</span><span class="n">paulis</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get coefficients and kets used for each term in the expansion of the</span>
+<span class="sd">        trace operators for each of the Pauli bases (eq. 2 in paper).</span>
 
-        <span class="n">init_combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">init_combinations</span><span class="p">))</span>
+<span class="sd">                 0   1   +   i</span>
+<span class="sd">            I    1   1</span>
+<span class="sd">            X   -1  -1   2</span>
+<span class="sd">            Y   -1  -1       2</span>
+<span class="sd">            Z    1  -1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+            <span class="s2">&quot;X&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;plusI&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+            <span class="s2">&quot;Z&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
+        <span class="p">}</span>
 
-        <span class="n">subcircuit_init_meas</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">init</span> <span class="ow">in</span> <span class="n">init_combinations</span><span class="p">:</span>
-            <span class="n">subcircuit_init_meas</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">tuple</span><span class="p">(</span><span class="n">init</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">measurements</span><span class="p">)))</span>
-        <span class="k">return</span> <span class="n">subcircuit_init_meas</span></div>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pauli_base_found</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">paulis</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pauli_base_found</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Use of multiple Pauli bases is not supported&quot;</span><span class="p">)</span>
 
+                <span class="n">pauli_base_found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">for</span> <span class="n">ket</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">[</span><span class="n">pauli</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="c1"># create a tuple of paulis, replacing the pauli at index i with ket</span>
+                    <span class="n">bases</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">ket</span> <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">i</span> <span class="k">else</span> <span class="n">pauli</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">paulis</span><span class="p">)]</span>
+                    <span class="p">)</span>
+                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">coeff</span><span class="p">,</span> <span class="n">bases</span><span class="p">))</span>
 
-<div class="viewcode-block" id="CutCircuit.convert_to_physical_init">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.convert_to_physical_init">[docs]</a>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">convert_to_physical_init</span><span class="p">(</span><span class="n">init</span><span class="p">):</span>
-        <span class="n">init</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>  <span class="c1"># Do not modify in place!</span>
-        <span class="n">coefficient</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">init</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;zero&quot;</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;+zero&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;zero&quot;</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;+one&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;one&quot;</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;2plus&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;plus&quot;</span>
-                <span class="n">coefficient</span> <span class="o">*=</span> <span class="mi">2</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;-zero&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;zero&quot;</span>
-                <span class="n">coefficient</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;-one&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;one&quot;</span>
-                <span class="n">coefficient</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">&quot;2plusI&quot;</span><span class="p">:</span>
-                <span class="n">init</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;plusI&quot;</span>
-                <span class="n">coefficient</span> <span class="o">*=</span> <span class="mi">2</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Illegal initilization symbol :&quot;</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">coefficient</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">init</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pauli_base_found</span><span class="p">:</span>
+            <span class="c1"># If no Pauli base was found, return the original initialization</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">paulis</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.find_cuts">
@@ -607,25 +592,23 @@
                             <span class="s2">&quot;Generating entries for a subcircuit. subcircuit_idx should be either upstream or downstream&quot;</span>
                         <span class="p">)</span>
 
-                <span class="n">subcircuit_instance_init_meas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_instance_init_meas</span><span class="p">(</span>
-                    <span class="n">initializations</span><span class="o">=</span><span class="n">subcircuit_entry_init</span><span class="p">,</span>
-                    <span class="n">measurements</span><span class="o">=</span><span class="n">subcircuit_entry_meas</span><span class="p">,</span>
-                <span class="p">)</span>
                 <span class="n">subcircuit_entry_term</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">init_meas</span> <span class="ow">in</span> <span class="n">subcircuit_instance_init_meas</span><span class="p">:</span>
-                    <span class="n">instance_init</span><span class="p">,</span> <span class="n">instance_meas</span> <span class="o">=</span> <span class="n">init_meas</span>
-                    <span class="n">coefficient</span><span class="p">,</span> <span class="n">instance_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_to_physical_init</span><span class="p">(</span>
-                        <span class="n">init</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">instance_init</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">paulis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_initializations</span><span class="p">(</span><span class="n">subcircuit_entry_init</span><span class="p">):</span>
+                    <span class="n">initializations_and_measurements</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">paulis</span><span class="p">,</span>
+                        <span class="nb">tuple</span><span class="p">(</span><span class="n">subcircuit_entry_meas</span><span class="p">),</span>
                     <span class="p">)</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="n">instance_init</span><span class="p">,</span> <span class="n">instance_meas</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">subcircuit_instances</span><span class="p">[</span>
-                        <span class="n">subcircuit_idx</span>
-                    <span class="p">]:</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">initializations_and_measurements</span>
+                        <span class="ow">not</span> <span class="ow">in</span> <span class="n">subcircuit_instances</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span>
+                    <span class="p">):</span>
                         <span class="n">subcircuit_instances</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                            <span class="p">(</span><span class="n">instance_init</span><span class="p">,</span> <span class="n">instance_meas</span><span class="p">)</span>
+                            <span class="n">initializations_and_measurements</span>
                         <span class="p">)</span>
                     <span class="n">subcircuit_entry_term</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="p">(</span><span class="n">coefficient</span><span class="p">,</span> <span class="p">(</span><span class="n">instance_init</span><span class="p">,</span> <span class="n">instance_meas</span><span class="p">))</span>
+                        <span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">initializations_and_measurements</span><span class="p">)</span>
                     <span class="p">)</span>
+
                 <span class="n">subcircuit_entries</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">][</span>
                     <span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">subcircuit_entry_init</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">subcircuit_entry_meas</span><span class="p">))</span>
                 <span class="p">]</span> <span class="o">=</span> <span class="n">subcircuit_entry_term</span>

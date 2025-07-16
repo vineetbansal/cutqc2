@@ -67,11 +67,6 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.convert_to_physical_init">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_to_physical_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.convert_to_physical_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.convert_to_physical_init" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.cut">
 <span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.cut" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -97,9 +92,21 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_instance_init_meas">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_instance_init_meas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initializations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurements</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_instance_init_meas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_instance_init_meas" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_initializations">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_initializations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paulis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_initializations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_initializations" title="Link to this definition">¶</a></dt>
+<dd><p>Get coefficients and kets used for each term in the expansion of the
+trace operators for each of the Pauli bases (eq. 2 in paper).
+:rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]</span></p>
+<blockquote>
+<div><blockquote>
+<div><p>0   1   +   i</p>
+</div></blockquote>
+<p>I    1   1
+X   -1  -1   2
+Y   -1  -1       2
+Z    1  -1</p>
+</div></blockquote>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_inter_wire_dag">
