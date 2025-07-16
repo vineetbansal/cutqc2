@@ -175,56 +175,44 @@ class CutCircuit:
         }
 
     @staticmethod
-    def get_instance_init_meas(initializations, measurements):
-        init_combinations = []
-        for initialization in initializations:
-            match initialization:
-                case "zero":
-                    init_combinations.append(["zero"])
-                case "I":
-                    init_combinations.append(["+zero", "+one"])
-                case "X":
-                    init_combinations.append(["2plus", "-zero", "-one"])
-                case "Y":
-                    init_combinations.append(["2plusI", "-zero", "-one"])
-                case "Z":
-                    init_combinations.append(["+zero", "-one"])
-                case _:
-                    raise Exception("Illegal initialization symbol :", initialization)
+    def get_initializations(paulis: list[str]) -> list[tuple[int, tuple[str]]]:
+        """
+        Get coefficients and kets used for each term in the expansion of the
+        trace operators for each of the Pauli bases (eq. 2 in paper).
 
-        init_combinations = list(itertools.product(*init_combinations))
+                 0   1   +   i
+            I    1   1
+            X   -1  -1   2
+            Y   -1  -1       2
+            Z    1  -1
+        """
+        terms = {
+            "I": {"zero": 1, "one": 1},
+            "X": {"zero": -1, "one": -1, "plus": 2},
+            "Y": {"zero": -1, "one": -1, "plusI": 2},
+            "Z": {"zero": 1, "one": -1},
+        }
 
-        subcircuit_init_meas = []
-        for init in init_combinations:
-            subcircuit_init_meas.append((tuple(init), tuple(measurements)))
-        return subcircuit_init_meas
+        result = []
+        pauli_base_found = False
+        for i, pauli in enumerate(paulis):
+            if pauli in terms:
+                if pauli_base_found:
+                    raise ValueError("Use of multiple Pauli bases is not supported")
 
-    @staticmethod
-    def convert_to_physical_init(init):
-        init = list(init)  # Do not modify in place!
-        coefficient = 1
-        for idx, x in enumerate(init):
-            if x == "zero":
-                continue
-            elif x == "+zero":
-                init[idx] = "zero"
-            elif x == "+one":
-                init[idx] = "one"
-            elif x == "2plus":
-                init[idx] = "plus"
-                coefficient *= 2
-            elif x == "-zero":
-                init[idx] = "zero"
-                coefficient *= -1
-            elif x == "-one":
-                init[idx] = "one"
-                coefficient *= -1
-            elif x == "2plusI":
-                init[idx] = "plusI"
-                coefficient *= 2
-            else:
-                raise Exception("Illegal initilization symbol :", x)
-        return coefficient, tuple(init)
+                pauli_base_found = True
+                for ket, coeff in terms[pauli].items():
+                    # create a tuple of paulis, replacing the pauli at index i with ket
+                    bases = tuple(
+                        [ket if j == i else pauli for j, pauli in enumerate(paulis)]
+                    )
+                    result.append((coeff, bases))
+
+        if not pauli_base_found:
+            # If no Pauli base was found, return the original initialization
+            result.append((1, tuple(paulis)))
+
+        return result
 
     def find_cuts(
         self,
@@ -520,25 +508,23 @@ class CutCircuit:
                             "Generating entries for a subcircuit. subcircuit_idx should be either upstream or downstream"
                         )
 
-                subcircuit_instance_init_meas = self.get_instance_init_meas(
-                    initializations=subcircuit_entry_init,
-                    measurements=subcircuit_entry_meas,
-                )
                 subcircuit_entry_term = []
-                for init_meas in subcircuit_instance_init_meas:
-                    instance_init, instance_meas = init_meas
-                    coefficient, instance_init = self.convert_to_physical_init(
-                        init=list(instance_init)
+                for coeff, paulis in self.get_initializations(subcircuit_entry_init):
+                    initializations_and_measurements = (
+                        paulis,
+                        tuple(subcircuit_entry_meas),
                     )
-                    if (instance_init, instance_meas) not in subcircuit_instances[
-                        subcircuit_idx
-                    ]:
+                    if (
+                        initializations_and_measurements
+                        not in subcircuit_instances[subcircuit_idx]
+                    ):
                         subcircuit_instances[subcircuit_idx].append(
-                            (instance_init, instance_meas)
+                            initializations_and_measurements
                         )
                     subcircuit_entry_term.append(
-                        (coefficient, (instance_init, instance_meas))
+                        (coeff, initializations_and_measurements)
                     )
+
                 subcircuit_entries[subcircuit_idx][
                     (tuple(subcircuit_entry_init), tuple(subcircuit_entry_meas))
                 ] = subcircuit_entry_term

@@ -17,10 +17,7 @@ may not make sense if >1 initialization is not "zero" (TODO: Confirm this).
 
 def test_zeros():
     initializations = ["zero", "zero", "zero"]
-    measurements = ["I", "comp"]  # measurements don't matter for this test
-
-    results = CutCircuit.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
+    coeffs_kets = CutCircuit.get_initializations(initializations)
 
     # There are no Pauli bases - we simply get what we passed in.
     assert len(coeffs_kets) == 1
@@ -29,10 +26,7 @@ def test_zeros():
 
 def testI():
     initializations = ["I", "zero"]
-    measurements = ["I", "comp"]  # measurements don't matter for this test
-
-    results = CutCircuit.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
+    coeffs_kets = CutCircuit.get_initializations(initializations)
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -44,10 +38,7 @@ def testI():
 
 def testX():
     initializations = ["zero", "X", "zero", "zero"]
-    measurements = ["I", "comp"]  # measurements don't matter for this test
-
-    results = CutCircuit.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
+    coeffs_kets = CutCircuit.get_initializations(initializations)
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -60,10 +51,7 @@ def testX():
 
 def testY():
     initializations = ["zero", "Y", "zero"]
-    measurements = ["I", "comp"]  # measurements don't matter for this test
-
-    results = CutCircuit.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
+    coeffs_kets = CutCircuit.get_initializations(initializations)
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
@@ -76,10 +64,7 @@ def testY():
 
 def testZ():
     initializations = ["zero", "zero", "Z", "zero"]
-    measurements = ["I", "comp"]  # measurements don't matter for this test
-
-    results = CutCircuit.get_instance_init_meas(initializations, measurements)
-    coeffs_kets = [CutCircuit.convert_to_physical_init(result[0]) for result in results]
+    coeffs_kets = CutCircuit.get_initializations(initializations)
 
     # important - don't rely on the order in which the coefficients and kets
     # are returned, but simply assert they're there.
