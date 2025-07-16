@@ -10,8 +10,8 @@ class ComputeGraph:
     """
 
     # Simulating 2 subcircuits with these no. of wires
-    s0_wires = 12
-    s1_wires = 15
+    s0_wires = 3
+    s1_wires = 3
 
     def __init__(self):
         self.nodes = {
@@ -43,10 +43,10 @@ class ComputeGraph:
                 {
                     # The format for Qubit is ((<n_wires>, <prefix>), <wire_index>)
                     "O_qubit": Qubit(
-                        QuantumRegister(12, "q"), 11
+                        QuantumRegister(3, "q"), 2
                     ),  # cut wire w.r.t subcircuit 0
                     "rho_qubit": Qubit(
-                        QuantumRegister(15, "q"), 0
+                        QuantumRegister(3, "q"), 0
                     ),  # cut wire w.r.t subcircuit 1
                 },
             )
@@ -106,15 +106,13 @@ class ComputeGraph:
         return self.initial_measurements[subcircuit_idx][self.current_pauli]
 
 
-def test_dynamic_definition_build():
+def test_dynamic_definition():
     compute_graph = ComputeGraph()
 
-    dynamic_definition = DynamicDefinition(
+    DynamicDefinition(
         compute_graph=compute_graph,
         num_cuts=1,
         subcircuit_entry_probs=compute_graph.subcircuit_entry_probs,
-        mem_limit=26,  # total number of qubits in both subcircuits
+        mem_limit=5,  # total number of qubits in both subcircuits
         recursion_depth=1,  # 1 implies no recursion
     )
-
-    dynamic_definition.build()

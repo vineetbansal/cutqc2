@@ -10,24 +10,8 @@ from cutqc2.cutqc.helper_functions.non_ibmq_functions import (
 )
 
 
-def get_num_workers(num_jobs, ram_required_per_worker):
-    ram_avail = psutil.virtual_memory().available / 1024**3
-    ram_avail = ram_avail / 4 * 3
-    num_cpus = int(os.cpu_count() / 4 * 3)
-    num_workers = int(min(ram_avail / ram_required_per_worker, num_jobs, num_cpus))
-    return num_workers
-
-
-def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, num_shots_fn=None):
-    """
-    subcircuit_instance_probs[(instance_init,instance_meas)] = measured probability
-    """
+def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas):
     subcircuit_measured_probs = {}
-    num_shots = num_shots_fn(subcircuit) if num_shots_fn is not None else None
-    num_workers = get_num_workers(
-        num_jobs=len(subcircuit_instance_init_meas),
-        ram_required_per_worker=2**subcircuit.num_qubits * 4 / 1e9,
-    )
     for instance_init_meas in subcircuit_instance_init_meas:
         if "Z" in instance_init_meas[1]:
             continue
@@ -36,16 +20,11 @@ def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, num_shot
             init=instance_init_meas[0],
             meas=instance_init_meas[1],
         )
-        if num_shots is None:
-            subcircuit_inst_prob = evaluate_circ(
-                circuit=subcircuit_instance, backend="statevector_simulator"
-            )
-        else:
-            subcircuit_inst_prob = evaluate_circ(
-                circuit=subcircuit_instance,
-                backend="noiseless_qasm_simulator",
-                options={"num_shots": num_shots},
-            )
+
+        subcircuit_inst_prob = evaluate_circ(
+            circuit=subcircuit_instance, backend="statevector_simulator"
+        )
+
         mutated_meas = mutate_measurement_basis(meas=instance_init_meas[1])
         for meas in mutated_meas:
             measured_prob = measure_prob(
@@ -177,12 +156,6 @@ def attribute_shots(subcircuit_measured_probs, subcircuit_entries):
     Attribute the subcircuit_instance shots into respective subcircuit entries
     subcircuit_entry_probs[entry_init, entry_meas] = entry_prob
     """
-    # num_workers = get_num_workers(
-    #     num_jobs=len(jobs),
-    #     ram_required_per_worker=2 ** subcircuit.num_qubits
-    #     * 4
-    #     / 1e9,
-    # )
     subcircuit_entry_probs = {}
     for subcircuit_entry_init_meas in subcircuit_entries:
         subcircuit_entry_term = subcircuit_entries[subcircuit_entry_init_meas]

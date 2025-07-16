@@ -1,15 +1,6 @@
 import itertools
+from functools import reduce
 import numpy as np
-
-
-def compute_summation_term(*argv):
-    summation_term = None
-    for subcircuit_entry_prob in argv:
-        if summation_term is None:
-            summation_term = subcircuit_entry_prob
-        else:
-            summation_term = np.kron(summation_term, subcircuit_entry_prob)
-    return summation_term
 
 
 class GraphContractor(object):
@@ -51,9 +42,9 @@ class GraphContractor(object):
                 ]
                 summation_term.append(subcircuit_entry_prob)
             if reconstructed_prob is None:
-                reconstructed_prob = compute_summation_term(*summation_term)
+                reconstructed_prob = reduce(np.kron, summation_term)
             else:
-                reconstructed_prob += compute_summation_term(*summation_term)
+                reconstructed_prob += reduce(np.kron, summation_term)
             self.compute_graph.remove_bases_from_edges(edges=self.compute_graph.edges)
         reconstructed_prob *= 1 / 2**self.num_cuts
         return reconstructed_prob

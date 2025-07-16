@@ -1,11 +1,10 @@
 import itertools, copy, pickle, subprocess
 import numpy as np
 
-from cutqc2.cutqc.cutqc.evaluator import get_num_workers
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
 
 
-class DynamicDefinition(object):
+class DynamicDefinition:
     def __init__(
         self,
         compute_graph,
@@ -22,7 +21,9 @@ class DynamicDefinition(object):
         self.recursion_depth = recursion_depth
         self.dd_bins = {}
 
-    def build(self):
+        self._build()
+
+    def _build(self):
         """
         Returns
 
@@ -259,6 +260,10 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
 
 def merge_prob_vector(unmerged_prob_vector, qubit_states):
     num_active = qubit_states.count("active")
+    if num_active == len(qubit_states):
+        # short-circuit if no merging is needed
+        return np.copy(unmerged_prob_vector)
+
     num_merged = qubit_states.count("merged")
     merged_prob_vector = np.zeros(2**num_active, dtype="float32")
 
