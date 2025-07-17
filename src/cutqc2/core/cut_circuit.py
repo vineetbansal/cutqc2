@@ -34,7 +34,8 @@ class CutCircuit:
     ):
         self.check_valid(circuit)
 
-        self.raw_circuit = circuit
+        self.raw_circuit = circuit.copy()
+        self.unlabeled_circuit = circuit.copy()
         if add_labels:
             self.circuit = self.get_labeled_circuit(circuit.copy())
         else:
@@ -48,7 +49,7 @@ class CutCircuit:
         self.cuts: list[tuple[str, int]] = []
 
     def __str__(self):
-        return str(self.circuit)
+        return str(self.unlabeled_circuit.draw(output="text", fold=-1))
 
     def __len__(self):
         return len(self.subcircuits)
@@ -275,6 +276,8 @@ class CutCircuit:
                 cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
                 # insert the cut instruction right after the current instruction
                 self.circuit.data.insert(i + 1, cut_instr)
+                # Also add to unlabeled circuit (for visualization purposes)
+                self.unlabeled_circuit.data.insert(i + 1, cut_instr)
                 found = True
                 break
 
@@ -305,12 +308,9 @@ class CutCircuit:
         if generate_subcircuits:
             self.generate_subcircuits()
 
-        self.num_cuts = len(cut_edges)
-        self.annotated_subcircuits = {}  # populated by `populate_annotated_subcircuits()`
-
-        self.populate_annotated_subcircuits()
-        self.populate_compute_graph()
-        self.populate_subcircuit_entries()
+    @property
+    def num_cuts(self) -> int:
+        return len(self.cuts)
 
     def generate_subcircuits(self):
         # TODO: Cache results intelligently based on cut positions:
@@ -353,7 +353,7 @@ class CutCircuit:
         subcircuit_qubits = set()
         subcircuit_ops = []
 
-        for op_node in circuit_to_dag(self.circuit).topological_op_nodes():
+        for op_node in circuit_to_dag(self.unlabeled_circuit).topological_op_nodes():
             op_node = deepcopy(op_node)
             subcircuit_qubits |= set(op_node.qargs)
             if op_node.name == "cut":
@@ -375,6 +375,11 @@ class CutCircuit:
             )
             self.subcircuits.append(subcircuit)
 
+        # book-keeping tasks
+        self.populate_annotated_subcircuits()
+        self.populate_compute_graph()
+        self.populate_subcircuit_entries()
+
     def cut(
         self,
         max_subcircuit_width: int,
@@ -382,6 +387,7 @@ class CutCircuit:
         num_subcircuits: list[int],
         max_subcircuit_cuts: int,
         subcircuit_size_imbalance: int,
+        generate_subcircuits: bool = True
     ):
         cut_edges_pairs = self.find_cuts(
             max_subcircuit_width=max_subcircuit_width,
@@ -391,23 +397,23 @@ class CutCircuit:
             subcircuit_size_imbalance=subcircuit_size_imbalance,
         )
 
-        self.add_cuts(cut_edges=cut_edges_pairs, generate_subcircuits=True)
+        self.add_cuts(cut_edges=cut_edges_pairs, generate_subcircuits=generate_subcircuits)
 
-    def legacy_evaluate(self):
-        self.subcircuit_entry_probs = {}
-        for subcircuit_index in range(len(self)):
+    def run_subcircuits(self, subcircuits: list[int] | None = None):
+        subcircuits = subcircuits or range(len(self))
+        for subcircuit in subcircuits:
             subcircuit_measured_probs = run_subcircuit_instances(
-                subcircuit=self[subcircuit_index],
+                subcircuit=self[subcircuit],
                 subcircuit_instance_init_meas=self.subcircuit_instances[
-                    subcircuit_index
+                    subcircuit
                 ],
             )
-            self.subcircuit_entry_probs[subcircuit_index] = attribute_shots(
+            self.subcircuit_entry_probs[subcircuit] = attribute_shots(
                 subcircuit_measured_probs=subcircuit_measured_probs,
-                subcircuit_entries=self.subcircuit_entries[subcircuit_index],
+                subcircuit_entries=self.subcircuit_entries[subcircuit],
             )
 
-    def legacy_build(self, mem_limit, recursion_depth):
+    def compute_probabilities(self, mem_limit=None, recursion_depth=1):
         dd = DynamicDefinition(
             compute_graph=self.compute_graph,
             num_cuts=self.num_cuts,
@@ -419,19 +425,27 @@ class CutCircuit:
         self.approximation_bins = dd.dd_bins
         self.num_recursions = len(self.approximation_bins)
 
-    def legacy_verify(self, atol: float = 1e-10):
-        ground_truth = evaluate_circ(
-            circuit=self.raw_circuit, backend="statevector_simulator"
-        )
+    def compute_reconstructed_probabilities(self) -> np.array:
         subcircuit_out_qubits = self.get_reconstruction_qubit_order()
         reconstructed_prob = read_dd_bins(
             subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=self.approximation_bins
         )
-        real_probability = quasi_to_real(
+        reconstructed_prob = quasi_to_real(
             quasiprobability=reconstructed_prob, mode="nearest"
         )
+        return reconstructed_prob
+
+    def get_ground_truth(self) -> np.ndarray:
+        return evaluate_circ(
+            circuit=self.raw_circuit, backend="statevector_simulator"
+        )
+
+    def verify(self, reconstructed_probabilities: np.ndarray | None = None, atol: float = 1e-10):
+        reconstructed_probabilities = reconstructed_probabilities or self.compute_reconstructed_probabilities()
+        ground_truth = self.get_ground_truth()
+
         approximation_error = (
-            MSE(target=ground_truth, obs=real_probability)
+            MSE(target=ground_truth, obs=reconstructed_probabilities)
             * 2**self.circuit.num_qubits
             / np.linalg.norm(ground_truth) ** 2
         )
@@ -533,8 +547,10 @@ class CutCircuit:
             subcircuit_entries,
             subcircuit_instances,
         )
+        self.subcircuit_entry_probs = {}
 
     def populate_annotated_subcircuits(self):
+        self.annotated_subcircuits = {}
         for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
             self.annotated_subcircuits[subcircuit_idx] = {
                 "effective": subcircuit.num_qubits,

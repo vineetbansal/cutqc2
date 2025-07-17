@@ -23,13 +23,13 @@ def test_cut_circuit_add_cut(simple_circuit):
     cut_circuit.add_cut("0004", 0)
     got_str = str(cut_circuit)
     expected_str = textwrap.dedent("""
-                ┌──────┐ 0004 ┌────┐ 0005 
-        0: ─|0>─┤ 0003 ├──■───┤ // ├──■───
-                └──────┘┌─┴─┐ └────┘  │   
-        1: ─|0>─────────┤ X ├─────────┼───
-                        └───┘       ┌─┴─┐ 
-        2: ─|0>─────────────────────┤ X ├─
-                                    └───┘ 
+                  ┌───┐     ┌────┐     
+        q_0: ─|0>─┤ H ├──■──┤ // ├──■──
+                  └───┘┌─┴─┐└────┘  │  
+        q_1: ─|0>──────┤ X ├────────┼──
+                       └───┘      ┌─┴─┐
+        q_2: ─|0>─────────────────┤ X ├
+                                  └───┘
     """).strip("\n")
     assert got_str == expected_str
 
@@ -43,22 +43,21 @@ def test_cut_circuit_generate_subcircuits(simple_circuit):
 
     first_subcircuit_str = str(cut_circuit[0])
     expected_str = textwrap.dedent("""
-                ┌──────┐ 0004 
-        0: ─|0>─┤ 0003 ├──■───
-                └──────┘┌─┴─┐ 
-        1: ─|0>─────────┤ X ├─
-                        └───┘ 
+                ┌───┐     
+        0: ─|0>─┤ H ├──■──
+                └───┘┌─┴─┐
+        1: ─|0>──────┤ X ├
+                     └───┘
     """).strip("\n")
     assert first_subcircuit_str == expected_str
 
-    second_subcircuit_str = str(cut_circuit[1])
+    second_subcircuit_str = str(cut_circuit[1]).strip()
     expected_str = textwrap.dedent("""
-                ┌───┐ 
-        0: ─|0>─┤ X ├─
-                └─┬─┘ 
-        1: ───────■───
-                 0005 
-    """).strip("\n")
+                ┌───┐
+        0: ─|0>─┤ X ├
+                └─┬─┘
+        1: ───────■──
+    """).strip()
     assert second_subcircuit_str == expected_str
 
 
@@ -95,9 +94,9 @@ def test_cut_circuit_verify(simple_circuit):
 
     cut_circuit.add_cuts(cut_edge_pairs)
 
-    cut_circuit.legacy_evaluate()
-    cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
-    cut_circuit.legacy_verify()
+    cut_circuit.run_subcircuits()
+    cut_circuit.compute_probabilities(mem_limit=10, recursion_depth=1)
+    cut_circuit.verify()
 
 
 def test_cut_circuit_figure4_cut(figure_4_qiskit_circuit):
@@ -149,6 +148,6 @@ def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
             )
         ]
     )
-    cut_circuit.legacy_evaluate()
-    cut_circuit.legacy_build(mem_limit=10, recursion_depth=1)
-    cut_circuit.legacy_verify()
+    cut_circuit.run_subcircuits()
+    cut_circuit.compute_probabilities(mem_limit=10, recursion_depth=1)
+    cut_circuit.verify()
