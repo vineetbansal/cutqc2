@@ -69,12 +69,13 @@ if __name__ == "__main__":
     # backend from qiskit
     cut_circuit.run_subcircuits()
 
-    # Classical postprocessing
-    cut_circuit.postprocess()
-
     # Save the cut circuit to a file
     # We could have done this at any point after creating the `CutCircuit` object
     cut_circuit.to_file("tutorial.h5")
 
+    # Load the cut circuit from the file
     cut_circuit = CutCircuit.from_file("tutorial.h5")
+
+    # We perform the postprocessing step on the reloaded cut-circuit,
+    # though we could have done this on the original cut-circuit as well.
     cut_circuit.postprocess()
