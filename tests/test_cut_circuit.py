@@ -1,5 +1,6 @@
 import textwrap
 import pytest
+import numpy as np
 from qiskit import QuantumCircuit
 from cutqc2.core.cut_circuit import CutCircuit
 from cutqc2.core.dag import DagNode, DAGEdge
@@ -32,6 +33,24 @@ def test_cut_circuit_add_cut(simple_circuit):
                                   └───┘
     """).strip("\n")
     assert got_str == expected_str
+    assert cut_circuit.cuts == [(0, 2)]
+
+
+def test_cut_circuit_add_cut_at_position(simple_circuit):
+    cut_circuit = CutCircuit(simple_circuit)
+    cut_circuit.add_cut_at_position(wire_index=0, gate_index=2)
+    got_str = str(cut_circuit)
+    expected_str = textwrap.dedent("""
+                  ┌───┐     ┌────┐     
+        q_0: ─|0>─┤ H ├──■──┤ // ├──■──
+                  └───┘┌─┴─┐└────┘  │  
+        q_1: ─|0>──────┤ X ├────────┼──
+                       └───┘      ┌─┴─┐
+        q_2: ─|0>─────────────────┤ X ├
+                                  └───┘
+    """).strip("\n")
+    assert got_str == expected_str
+    assert cut_circuit.cuts == [(0, 2)]
 
 
 def test_cut_circuit_generate_subcircuits(simple_circuit):
@@ -95,7 +114,7 @@ def test_cut_circuit_verify(simple_circuit):
     cut_circuit.add_cuts(cut_edge_pairs)
 
     cut_circuit.run_subcircuits()
-    cut_circuit.compute_probabilities(mem_limit=10, recursion_depth=1)
+    cut_circuit.postprocess()
     cut_circuit.verify()
 
 
@@ -109,7 +128,7 @@ def test_cut_circuit_figure4_cut(figure_4_qiskit_circuit):
         num_subcircuits=[2],
     )
 
-    assert cut_circuit.cuts == [("0014", 2)]
+    assert cut_circuit.cuts == [(2, 3)]
 
 
 def test_cut_circuit_figure4_reconstruction_order(figure_4_qiskit_circuit):
@@ -128,8 +147,7 @@ def test_cut_circuit_figure4_reconstruction_order(figure_4_qiskit_circuit):
             )
         ]
     )
-    reconstruction_qubit_order = cut_circuit.get_reconstruction_qubit_order()
-    assert reconstruction_qubit_order == {0: [1, 0], 1: [2, 4, 3]}
+    assert cut_circuit.reconstruction_qubit_order == {0: [1, 0], 1: [2, 4, 3]}
 
 
 def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
@@ -149,5 +167,50 @@ def test_cut_circuit_figure4_verify(figure_4_qiskit_circuit):
         ]
     )
     cut_circuit.run_subcircuits()
-    cut_circuit.compute_probabilities(mem_limit=10, recursion_depth=1)
+    cut_circuit.postprocess()
     cut_circuit.verify()
+
+
+def test_cut_circuit_figure4_to_file(figure_4_qiskit_circuit, tmp_path):
+    save_path = tmp_path / "test_cut_circuit_figure4_to_file.h5"
+
+    # We should be able to save the cut circuit at arbitrary points of
+    # the processing pipeline.
+    cut_circuit = CutCircuit(figure_4_qiskit_circuit)
+    cut_circuit.to_file(save_path)
+
+    cut_circuit.cut(
+        max_subcircuit_width=3,
+        max_subcircuit_cuts=2,
+        subcircuit_size_imbalance=3,
+        max_cuts=1,
+        num_subcircuits=[2],
+    )
+    cut_circuit.to_file(save_path)
+
+    cut_circuit.run_subcircuits()
+    cut_circuit.to_file(save_path)
+
+    cut_circuit.postprocess()
+    cut_circuit.to_file(save_path)
+
+    cut_circuit.verify()
+    cut_circuit.to_file(save_path)
+
+    # Recreate
+    cut_circuit2 = CutCircuit.from_file(save_path)
+
+    # For now we just compare the subcircuit entry probabilities
+    assert (
+        cut_circuit.subcircuit_entry_probs.keys()
+        == cut_circuit2.subcircuit_entry_probs.keys()
+    )
+    for k, v in cut_circuit.subcircuit_entry_probs.items():
+        for initializations_measurements, probabilities in v.items():
+            assert (
+                initializations_measurements in cut_circuit2.subcircuit_entry_probs[k]
+            )
+            assert np.allclose(
+                probabilities,
+                cut_circuit2.subcircuit_entry_probs[k][initializations_measurements],
+            )

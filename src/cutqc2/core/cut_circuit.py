@@ -1,11 +1,15 @@
+from pathlib import Path
 from copy import deepcopy
 import itertools
 import numpy as np
+from typing import Self
+
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import UnitaryGate
 from qiskit.circuit import Qubit, QuantumRegister, CircuitInstruction
 from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
+
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
 from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins, DynamicDefinition
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
@@ -41,12 +45,14 @@ class CutCircuit:
         else:
             self.circuit = circuit.copy()
 
-        self.subcircuits = []
         self.inter_wire_dag = self.get_inter_wire_dag(self.circuit)
         self.inter_wire_dag_metadata = self.get_dag_metadata(self.inter_wire_dag)
 
-        # location of cuts, as (<instruction_label>, <wire_index>) tuples
-        self.cuts: list[tuple[str, int]] = []
+        self.subcircuits = []
+        # location of cuts, as (<wire_index>, <gate_index>) tuples
+        self.cuts: list[tuple[int, int]] = []
+
+        self._reconstruction_qubit_order = None
 
     def __str__(self):
         return str(self.unlabeled_circuit.draw(output="text", fold=-1))
@@ -78,6 +84,18 @@ class CutCircuit:
             assert op_node.op.name != "barrier", (
                 "Please remove barriers from the circuit before cutting"
             )
+
+    @staticmethod
+    def from_file(filepath: str | Path, *args, **kwargs) -> Self:
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+
+        # Keep imports local to this function
+        from cutqc2.io.h5 import h5_to_cut_circuit
+
+        supported_formats = {".h5": h5_to_cut_circuit}
+        assert filepath.suffix in supported_formats, "Unsupported format"
+        return supported_formats[filepath.suffix](filepath, *args, **kwargs)
 
     @staticmethod
     def get_labeled_circuit(circuit: QuantumCircuit) -> QuantumCircuit:
@@ -262,6 +280,27 @@ class CutCircuit:
             else:
                 raise RuntimeError("No viable cuts found")
 
+    def add_cut_at_position(self, wire_index: int, gate_index: int):
+        cut_qubit = self.circuit.qubits[wire_index]
+
+        cut_wire_position = 0
+        found = False
+        for i, instr in enumerate(self.circuit.data):
+            if cut_qubit in instr.qubits:  # we're on the right wire
+                if cut_wire_position == gate_index:
+                    cut_instr = CircuitInstruction(WireCutGate(), qubits=(cut_qubit,))
+                    self.unlabeled_circuit.data.insert(i + 1, cut_instr)
+                    found = True
+                    break
+                cut_wire_position += 1
+
+        if found:
+            self.cuts.append((wire_index, gate_index))
+        else:
+            raise ValueError(
+                f"Gate index '{gate_index}' or wire {wire_index} not found in the circuit. Cannot add cut."
+            )
+
     def add_cut(self, label: str, wire_index: int):
         """
         Add a cut to the circuit at the position of the instruction with the specified label.
@@ -269,6 +308,9 @@ class CutCircuit:
             label: The label of the instruction after which the cut should be made.
             wire_index: The index of the wire where the cut should be made.
         """
+        cut_qubit = self.circuit.qubits[wire_index]
+        gate_counter = {qubit: 0 for qubit in self.circuit.qubits}
+
         found = False
         for i, instr in enumerate(self.circuit.data):
             if instr.operation.label == label:
@@ -280,9 +322,13 @@ class CutCircuit:
                 self.unlabeled_circuit.data.insert(i + 1, cut_instr)
                 found = True
                 break
+            else:
+                for qubit in instr.qubits:
+                    gate_counter[qubit] += 1
 
         if found:
-            self.cuts.append((label, wire_index))
+            gate_index = gate_counter[cut_qubit]
+            self.cuts.append((wire_index, gate_index))
         else:
             raise ValueError(
                 f"Label '{label}' or wire {wire_index} not found in the circuit. Cannot add cut."
@@ -311,6 +357,36 @@ class CutCircuit:
     @property
     def num_cuts(self) -> int:
         return len(self.cuts)
+
+    @property
+    def reconstruction_qubit_order(self) -> dict[int, list[int]]:
+        subcircuit_out_qubits = {
+            subcircuit_idx: [] for subcircuit_idx in range(len(self))
+        }
+
+        for qubit, mappings in self.qubit_mapping.items():
+            output_subcircuit_index, output_qubit = list(mappings.items())[-1]
+            subcircuit_out_qubits[output_subcircuit_index].append(
+                (
+                    output_qubit,
+                    self.circuit.qubits.index(qubit),
+                )
+            )
+
+        for subcircuit_idx in subcircuit_out_qubits:
+            subcircuit_out_qubits[subcircuit_idx] = sorted(
+                subcircuit_out_qubits[subcircuit_idx],
+                key=lambda x: self[subcircuit_idx].qubits.index(x[0]),
+                reverse=True,
+            )
+            subcircuit_out_qubits[subcircuit_idx] = [
+                x[1] for x in subcircuit_out_qubits[subcircuit_idx]
+            ]
+        return subcircuit_out_qubits
+
+    @reconstruction_qubit_order.setter
+    def reconstruction_qubit_order(self, value: dict[int, list[int]]):
+        self._reconstruction_qubit_order = deepcopy(value)
 
     def generate_subcircuits(self):
         # TODO: Cache results intelligently based on cut positions:
@@ -387,7 +463,7 @@ class CutCircuit:
         num_subcircuits: list[int],
         max_subcircuit_cuts: int,
         subcircuit_size_imbalance: int,
-        generate_subcircuits: bool = True
+        generate_subcircuits: bool = True,
     ):
         cut_edges_pairs = self.find_cuts(
             max_subcircuit_width=max_subcircuit_width,
@@ -397,16 +473,21 @@ class CutCircuit:
             subcircuit_size_imbalance=subcircuit_size_imbalance,
         )
 
-        self.add_cuts(cut_edges=cut_edges_pairs, generate_subcircuits=generate_subcircuits)
+        self.add_cuts(
+            cut_edges=cut_edges_pairs, generate_subcircuits=generate_subcircuits
+        )
 
-    def run_subcircuits(self, subcircuits: list[int] | None = None):
+    def run_subcircuits(
+        self,
+        subcircuits: list[int] | None = None,
+        backend: str = "statevector_simulator",
+    ):
         subcircuits = subcircuits or range(len(self))
         for subcircuit in subcircuits:
             subcircuit_measured_probs = run_subcircuit_instances(
                 subcircuit=self[subcircuit],
-                subcircuit_instance_init_meas=self.subcircuit_instances[
-                    subcircuit
-                ],
+                subcircuit_instance_init_meas=self.subcircuit_instances[subcircuit],
+                backend=backend,
             )
             self.subcircuit_entry_probs[subcircuit] = attribute_shots(
                 subcircuit_measured_probs=subcircuit_measured_probs,
@@ -423,26 +504,31 @@ class CutCircuit:
         )
 
         self.approximation_bins = dd.dd_bins
-        self.num_recursions = len(self.approximation_bins)
 
-    def compute_reconstructed_probabilities(self) -> np.array:
-        subcircuit_out_qubits = self.get_reconstruction_qubit_order()
+    def postprocess(self) -> np.array:
+        if not hasattr(self, "approximation_bins"):
+            self.compute_probabilities()
+
         reconstructed_prob = read_dd_bins(
-            subcircuit_out_qubits=subcircuit_out_qubits, dd_bins=self.approximation_bins
+            subcircuit_out_qubits=self.reconstruction_qubit_order,
+            dd_bins=self.approximation_bins,
         )
         reconstructed_prob = quasi_to_real(
             quasiprobability=reconstructed_prob, mode="nearest"
         )
         return reconstructed_prob
 
-    def get_ground_truth(self) -> np.ndarray:
-        return evaluate_circ(
-            circuit=self.raw_circuit, backend="statevector_simulator"
-        )
+    def get_ground_truth(self, backend: str) -> np.ndarray:
+        return evaluate_circ(circuit=self.raw_circuit, backend=backend)
 
-    def verify(self, reconstructed_probabilities: np.ndarray | None = None, atol: float = 1e-10):
-        reconstructed_probabilities = reconstructed_probabilities or self.compute_reconstructed_probabilities()
-        ground_truth = self.get_ground_truth()
+    def verify(
+        self,
+        reconstructed_probabilities: np.ndarray | None = None,
+        backend: str = "statevector_simulator",
+        atol: float = 1e-10,
+    ):
+        reconstructed_probabilities = reconstructed_probabilities or self.postprocess()
+        ground_truth = self.get_ground_truth(backend)
 
         approximation_error = (
             MSE(target=ground_truth, obs=reconstructed_probabilities)
@@ -563,31 +649,13 @@ class CutCircuit:
             for subcircuit_index in subcircuit_indices[:-1]:
                 self.annotated_subcircuits[subcircuit_index]["effective"] -= 1
 
-    def get_reconstruction_qubit_order(self) -> dict[int, list[int]]:
-        """
-        Get the output qubit in the full circuit for each subcircuit
-        Qiskit orders the full circuit output in descending order of qubits
-        """
-        subcircuit_out_qubits = {
-            subcircuit_idx: [] for subcircuit_idx in range(len(self))
-        }
+    def to_file(self, filepath: str | Path, *args, **kwargs) -> None:
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
 
-        for qubit, mappings in self.qubit_mapping.items():
-            output_subcircuit_index, output_qubit = list(mappings.items())[-1]
-            subcircuit_out_qubits[output_subcircuit_index].append(
-                (
-                    output_qubit,
-                    self.circuit.qubits.index(qubit),
-                )
-            )
+        # Keep imports local to this function
+        from cutqc2.io.h5 import cut_circuit_to_h5
 
-        for subcircuit_idx in subcircuit_out_qubits:
-            subcircuit_out_qubits[subcircuit_idx] = sorted(
-                subcircuit_out_qubits[subcircuit_idx],
-                key=lambda x: self[subcircuit_idx].qubits.index(x[0]),
-                reverse=True,
-            )
-            subcircuit_out_qubits[subcircuit_idx] = [
-                x[1] for x in subcircuit_out_qubits[subcircuit_idx]
-            ]
-        return subcircuit_out_qubits
+        supported_formats = {".h5": cut_circuit_to_h5}
+        assert filepath.suffix in supported_formats, "Unsupported format"
+        return supported_formats[filepath.suffix](self, filepath, *args, **kwargs)
