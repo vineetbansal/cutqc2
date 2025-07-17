@@ -11,7 +11,7 @@ from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
 from qiskit.quantum_info import Statevector
 
-from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
+from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
@@ -542,10 +542,22 @@ class CutCircuit:
                 subcircuit=self[subcircuit],
                 subcircuit_instance_init_meas=self.subcircuit_instances[subcircuit],
             )
-            self.subcircuit_entry_probs[subcircuit] = attribute_shots(
-                subcircuit_measured_probs=subcircuit_measured_probs,
-                subcircuit_entries=self.subcircuit_entries[subcircuit],
-            )
+
+            subcircuit_entry_probs = {}
+            for k, v in self.subcircuit_entries[subcircuit].items():
+                subcircuit_entry_prob = None
+                for term in v:
+                    coefficient, subcircuit_instance_init_meas = term
+                    subcircuit_instance_prob = subcircuit_measured_probs[
+                        subcircuit_instance_init_meas
+                    ]
+                    if subcircuit_entry_prob is None:
+                        subcircuit_entry_prob = coefficient * subcircuit_instance_prob
+                    else:
+                        subcircuit_entry_prob += coefficient * subcircuit_instance_prob
+                subcircuit_entry_probs[k] = subcircuit_entry_prob
+
+            self.subcircuit_entry_probs[subcircuit] = subcircuit_entry_probs
 
     def compute_probabilities(self, mem_limit=None, recursion_depth=1):
         dd = DynamicDefinition(

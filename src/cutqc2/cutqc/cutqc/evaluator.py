@@ -142,25 +142,3 @@ def measure_state(full_state, meas):
     effective_state = int(bin_effective_state, 2) if bin_effective_state != "" else 0
     # print('bin_full_state = %s --> %d * %s (%d)'%(bin_full_state,sigma,bin_effective_state,effective_state))
     return sigma, effective_state
-
-
-def attribute_shots(subcircuit_measured_probs, subcircuit_entries):
-    """
-    Attribute the subcircuit_instance shots into respective subcircuit entries
-    subcircuit_entry_probs[entry_init, entry_meas] = entry_prob
-    """
-    subcircuit_entry_probs = {}
-    for subcircuit_entry_init_meas in subcircuit_entries:
-        subcircuit_entry_term = subcircuit_entries[subcircuit_entry_init_meas]
-        subcircuit_entry_prob = None
-        for term in subcircuit_entry_term:
-            coefficient, subcircuit_instance_init_meas = term
-            subcircuit_instance_prob = subcircuit_measured_probs[
-                subcircuit_instance_init_meas
-            ]
-            if subcircuit_entry_prob is None:
-                subcircuit_entry_prob = coefficient * subcircuit_instance_prob
-            else:
-                subcircuit_entry_prob += coefficient * subcircuit_instance_prob
-        subcircuit_entry_probs[subcircuit_entry_init_meas] = subcircuit_entry_prob
-    return subcircuit_entry_probs
