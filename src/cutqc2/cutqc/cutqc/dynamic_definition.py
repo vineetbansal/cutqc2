@@ -241,61 +241,6 @@ class DynamicDefinition:
         return merged_subcircuit_entry_probs
 
 
-def read_dd_bins(subcircuit_out_qubits, dd_bins):
-    num_qubits = sum(
-        [
-            len(subcircuit_out_qubits[subcircuit_idx])
-            for subcircuit_idx in subcircuit_out_qubits
-        ]
-    )
-    reconstructed_prob = np.zeros(2**num_qubits, dtype=np.float32)
-    for recursion_layer in dd_bins:
-        num_active = sum(
-            [
-                dd_bins[recursion_layer]["subcircuit_state"][subcircuit_idx].count(
-                    "active"
-                )
-                for subcircuit_idx in dd_bins[recursion_layer]["subcircuit_state"]
-            ]
-        )
-        for bin_id, bin_prob in enumerate(dd_bins[recursion_layer]["bins"]):
-            if bin_prob > 0 and bin_id not in dd_bins[recursion_layer]["expanded_bins"]:
-                binary_bin_id = bin(bin_id)[2:].zfill(num_active)
-                binary_full_state = ["" for _ in range(num_qubits)]
-                for subcircuit_idx in dd_bins[recursion_layer]["smart_order"]:
-                    subcircuit_state = dd_bins[recursion_layer]["subcircuit_state"][
-                        subcircuit_idx
-                    ]
-                    for subcircuit_qubit_idx, qubit_state in enumerate(
-                        subcircuit_state
-                    ):
-                        qubit_idx = subcircuit_out_qubits[subcircuit_idx][
-                            subcircuit_qubit_idx
-                        ]
-                        if qubit_state == "active":
-                            binary_full_state[qubit_idx] = binary_bin_id[0]
-                            binary_bin_id = binary_bin_id[1:]
-                        else:
-                            binary_full_state[qubit_idx] = "%s" % qubit_state
-                merged_qubit_indices = []
-                for qubit, qubit_state in enumerate(binary_full_state):
-                    if qubit_state == "merged":
-                        merged_qubit_indices.append(qubit)
-                num_merged = len(merged_qubit_indices)
-                average_state_prob = bin_prob / 2**num_merged
-                for binary_merged_state in itertools.product(
-                    ["0", "1"], repeat=num_merged
-                ):
-                    for merged_qubit_ctr in range(num_merged):
-                        binary_full_state[merged_qubit_indices[merged_qubit_ctr]] = (
-                            binary_merged_state[merged_qubit_ctr]
-                        )
-                    full_state = "".join(binary_full_state)[::-1]
-                    full_state_idx = int(full_state, 2)
-                    reconstructed_prob[full_state_idx] = average_state_prob
-    return reconstructed_prob
-
-
 def merge_prob_vector(unmerged_prob_vector, qubit_states):
     num_active = qubit_states.count("active")
     if num_active == len(qubit_states):
