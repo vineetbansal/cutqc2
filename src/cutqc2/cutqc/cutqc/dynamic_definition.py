@@ -1,7 +1,6 @@
+from functools import reduce
 import itertools, copy, pickle, subprocess
 import numpy as np
-
-from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
 
 
 class DynamicDefinition:
@@ -53,14 +52,50 @@ class DynamicDefinition:
 
             merged_subcircuit_entry_probs = self.merge_states_into_bins(dd_schedule)
 
-            """ Build from the merged subcircuit entries """
-            graph_contractor = GraphContractor(
-                compute_graph=self.compute_graph,
-                subcircuit_entry_probs=merged_subcircuit_entry_probs,
-                num_cuts=self.num_cuts,
+            subcircuit_entry_lengths = {}
+            for subcircuit_idx in self.subcircuit_entry_probs:
+                first_entry_init_meas = \
+                list(self.subcircuit_entry_probs[subcircuit_idx].keys())[
+                    0
+                ]
+                length = len(self.subcircuit_entry_probs[subcircuit_idx][
+                                 first_entry_init_meas])
+                subcircuit_entry_lengths[subcircuit_idx] = length
+            num_qubits = 0
+            for subcircuit_idx in self.compute_graph.nodes:
+                num_qubits += self.compute_graph.nodes[subcircuit_idx]["effective"]
+
+            smart_order = sorted(
+                subcircuit_entry_lengths.keys(),
+                key=lambda subcircuit_idx: subcircuit_entry_lengths[
+                    subcircuit_idx],
             )
-            reconstructed_prob = graph_contractor.reconstructed_prob
-            smart_order = graph_contractor.smart_order
+
+            edges = self.compute_graph.get_edges(from_node=None, to_node=None)
+
+            reconstructed_prob = None
+            for edge_bases in itertools.product(["I", "X", "Y", "Z"],
+                                                repeat=len(edges)):
+                self.compute_graph.assign_bases_to_edges(edge_bases=edge_bases,
+                                                    edges=edges)
+                summation_term = []
+                for subcircuit_idx in smart_order:
+                    subcircuit_entry_init_meas = self.compute_graph.get_init_meas(
+                        subcircuit_idx=subcircuit_idx
+                    )
+                    subcircuit_entry_prob = \
+                    self.subcircuit_entry_probs[subcircuit_idx][
+                        subcircuit_entry_init_meas
+                    ]
+                    summation_term.append(subcircuit_entry_prob)
+                if reconstructed_prob is None:
+                    reconstructed_prob = reduce(np.kron, summation_term)
+                else:
+                    reconstructed_prob += reduce(np.kron, summation_term)
+                self.compute_graph.remove_bases_from_edges(
+                    edges=self.compute_graph.edges)
+
+            reconstructed_prob *= 1 / 2 ** self.num_cuts
 
             self.dd_bins[recursion_layer] = dd_schedule
             self.dd_bins[recursion_layer]["smart_order"] = smart_order
