@@ -48,7 +48,7 @@ if __name__ == "__main__":
     cut_circuit = CutCircuit(circuit)
     print(cut_circuit)
 
-    # Cut the circuit automatically with specified parameters
+    # Cut the circuit automatically with specified parameters.
     cut_circuit.cut(
         max_subcircuit_width=3,
         max_subcircuit_cuts=2,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         num_subcircuits=[2],
     )
 
-    # Notice the location of the cut as the '//' marker gate
+    # Notice the location of the cut as the '//' marker gate.
     print(cut_circuit)
 
     print("----- Subcircuits -----")
@@ -66,11 +66,11 @@ if __name__ == "__main__":
         print()
 
     # Run all the subcircuits - by default we use the `statevector_simulator`
-    # backend from qiskit
+    # backend from qiskit.
     cut_circuit.run_subcircuits()
 
     # Save the cut circuit to a file
-    # We could have done this at any point after creating the `CutCircuit` object
+    # We could have done this at any point after creating the `CutCircuit` object.
     cut_circuit.to_file("tutorial.h5")
 
     # Load the cut circuit from the file
@@ -79,3 +79,8 @@ if __name__ == "__main__":
     # We perform the postprocessing step on the reloaded cut-circuit,
     # though we could have done this on the original cut-circuit as well.
     cut_circuit.postprocess()
+
+    # Verification involves comparing the generated probabilities
+    # with the expected probabilities from a simulation of the uncut circuit.
+    # By default we use the `statevector_simulator` backend from qiskit.
+    cut_circuit.verify()
