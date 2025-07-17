@@ -13,8 +13,8 @@ from qiskit.quantum_info import Statevector
 from qiskit.converters import dag_to_circuit
 from qiskit.circuit.library.standard_gates import HGate, SGate, SdgGate, XGate
 
-from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
-from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
+from cutqc2.core.dynamic_definition import DynamicDefinition
+from cutqc2.core.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
 from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.core.dag import DagNode, DAGEdge

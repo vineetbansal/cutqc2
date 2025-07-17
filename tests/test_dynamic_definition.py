@@ -1,6 +1,6 @@
 import numpy as np
 from qiskit.circuit.quantumregister import QuantumRegister, Qubit
-from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
+from cutqc2.core.dynamic_definition import DynamicDefinition
 
 
 class ComputeGraph:
