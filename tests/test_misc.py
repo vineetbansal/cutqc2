@@ -1,5 +1,5 @@
 import numpy as np
-from cutqc2.cutqc.cutqc.evaluator import measure_state, measure_prob
+from cutqc2.core.cut_circuit import CutCircuit
 
 """
 sigma, effective_state = measure_state(<unmeasured_state>, <measurement_bases>)
@@ -14,19 +14,19 @@ sigma, effective_state = measure_state(<unmeasured_state>, <measurement_bases>)
 
 # If all measurement bases are "comp", then sigma=1 and effective_state=unmeasured state.
 def test_measure_state0():
-    sigma, effective_state = measure_state(0b000, ["comp", "comp", "comp"])
+    sigma, effective_state = CutCircuit.measure_state(0b000, ["comp", "comp", "comp"])
     assert sigma == 1
     assert effective_state == 0
 
 
 def test_measure_state1():
-    sigma, effective_state = measure_state(0b001, ["comp", "comp", "comp"])
+    sigma, effective_state = CutCircuit.measure_state(0b001, ["comp", "comp", "comp"])
     assert sigma == 1
     assert effective_state == 1
 
 
 def test_measure_state2():
-    sigma, effective_state = measure_state(0b010, ["comp", "comp", "comp"])
+    sigma, effective_state = CutCircuit.measure_state(0b010, ["comp", "comp", "comp"])
     assert sigma == 1
     assert effective_state == 2
 
@@ -35,7 +35,7 @@ def test_measure_state3():
     # Eq. 3 in paper:
     #   xx0, xx1 -> +xx  if M_last = I
     # So we have result = (+1, 0b00) = (1, 0)
-    sigma, effective_state = measure_state(0b100, ["comp", "comp", "I"])
+    sigma, effective_state = CutCircuit.measure_state(0b100, ["comp", "comp", "I"])
     assert sigma == 1
     assert effective_state == 0
 
@@ -44,7 +44,9 @@ def test_measure_state4():
     # Eq. 3 in paper:
     #   xx1 -> -xx  if M_last != I
     # So we have result = (-1, 0b110) = (-1, 6)
-    sigma, effective_state = measure_state(0b1110, ["comp", "comp", "comp", "Z"])
+    sigma, effective_state = CutCircuit.measure_state(
+        0b1110, ["comp", "comp", "comp", "Z"]
+    )
     assert sigma == -1
     assert effective_state == 6
 
@@ -52,7 +54,7 @@ def test_measure_state4():
 def test_measure_prob0():
     # We go from a 2^n probability vector for a subcircuit
     # to a 2^(n-1) "quasi"-probability vector
-    result = measure_prob(
+    result = CutCircuit.measure_prob(
         [
             0.25,  # 000 -> +0.25  for 00
             0,  # 001 -> +0.00  for 01

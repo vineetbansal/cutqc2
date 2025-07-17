@@ -10,8 +10,9 @@ from qiskit.circuit import Qubit, QuantumRegister, CircuitInstruction
 from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
 from qiskit.quantum_info import Statevector
+from qiskit.converters import dag_to_circuit
+from qiskit.circuit.library.standard_gates import HGate, SGate, SdgGate, XGate
 
-from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
@@ -291,6 +292,110 @@ class CutCircuit:
                         reconstructed_prob[full_state_idx] = average_state_prob
         return reconstructed_prob
 
+    @staticmethod
+    def mutate_measurement_basis(meas):
+        if all(x != "I" for x in meas):
+            return [meas]
+        else:
+            mutated_meas = []
+            for x in meas:
+                if x != "I":
+                    mutated_meas.append([x])
+                else:
+                    mutated_meas.append(["I", "Z"])
+            mutated_meas = list(itertools.product(*mutated_meas))
+            return mutated_meas
+
+    @staticmethod
+    def modify_subcircuit_instance(subcircuit, init, meas):
+        subcircuit_dag = circuit_to_dag(subcircuit)
+        subcircuit_instance_dag = deepcopy(subcircuit_dag)
+        for i, x in enumerate(init):
+            q = subcircuit.qubits[i]
+            if x == "zero":
+                continue
+            elif x == "one":
+                subcircuit_instance_dag.apply_operation_front(
+                    op=XGate(), qargs=[q], cargs=[]
+                )
+            elif x == "plus":
+                subcircuit_instance_dag.apply_operation_front(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+            elif x == "minus":
+                subcircuit_instance_dag.apply_operation_front(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+                subcircuit_instance_dag.apply_operation_front(
+                    op=XGate(), qargs=[q], cargs=[]
+                )
+            elif x == "plusI":
+                subcircuit_instance_dag.apply_operation_front(
+                    op=SGate(), qargs=[q], cargs=[]
+                )
+                subcircuit_instance_dag.apply_operation_front(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+            elif x == "minusI":
+                subcircuit_instance_dag.apply_operation_front(
+                    op=SGate(), qargs=[q], cargs=[]
+                )
+                subcircuit_instance_dag.apply_operation_front(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+                subcircuit_instance_dag.apply_operation_front(
+                    op=XGate(), qargs=[q], cargs=[]
+                )
+            else:
+                raise Exception("Illegal initialization :", x)
+        for i, x in enumerate(meas):
+            q = subcircuit.qubits[i]
+            if x == "I" or x == "comp":
+                continue
+            elif x == "X":
+                subcircuit_instance_dag.apply_operation_back(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+            elif x == "Y":
+                subcircuit_instance_dag.apply_operation_back(
+                    op=SdgGate(), qargs=[q], cargs=[]
+                )
+                subcircuit_instance_dag.apply_operation_back(
+                    op=HGate(), qargs=[q], cargs=[]
+                )
+            else:
+                raise Exception("Illegal measurement basis:", x)
+        subcircuit_instance_circuit = dag_to_circuit(subcircuit_instance_dag)
+        return subcircuit_instance_circuit
+
+    @staticmethod
+    def measure_prob(unmeasured_prob, meas):
+        if meas.count("comp") == len(meas) or type(unmeasured_prob) is float:
+            return unmeasured_prob
+        else:
+            measured_prob = np.zeros(int(2 ** meas.count("comp")))
+            for full_state, p in enumerate(unmeasured_prob):
+                sigma, effective_state = CutCircuit.measure_state(
+                    full_state=full_state, meas=meas
+                )
+                measured_prob[effective_state] += sigma * p
+            return measured_prob
+
+    @staticmethod
+    def measure_state(full_state, meas):
+        bin_full_state = bin(full_state)[2:].zfill(len(meas))
+        sigma = 1
+        bin_effective_state = ""
+        for meas_bit, meas_basis in zip(bin_full_state, meas[::-1]):
+            if meas_bit == "1" and meas_basis != "I" and meas_basis != "comp":
+                sigma *= -1
+            if meas_basis == "comp":
+                bin_effective_state += meas_bit
+        effective_state = (
+            int(bin_effective_state, 2) if bin_effective_state != "" else 0
+        )
+        return sigma, effective_state
+
     def find_cuts(
         self,
         max_subcircuit_width: int,
@@ -538,10 +643,28 @@ class CutCircuit:
     def run_subcircuits(self, subcircuits: list[int] | None = None):
         subcircuits = subcircuits or range(len(self))
         for subcircuit in subcircuits:
-            subcircuit_measured_probs = run_subcircuit_instances(
-                subcircuit=self[subcircuit],
-                subcircuit_instance_init_meas=self.subcircuit_instances[subcircuit],
-            )
+            subcircuit_measured_probs = {}
+            for instance_init_meas in self.subcircuit_instances[subcircuit]:
+                if "Z" in instance_init_meas[1]:
+                    continue
+                subcircuit_instance = self.modify_subcircuit_instance(
+                    subcircuit=self[subcircuit],
+                    init=instance_init_meas[0],
+                    meas=instance_init_meas[1],
+                )
+
+                subcircuit_inst_prob = Statevector.from_instruction(
+                    subcircuit_instance
+                ).probabilities()
+
+                mutated_meas = self.mutate_measurement_basis(meas=instance_init_meas[1])
+                for meas in mutated_meas:
+                    measured_prob = self.measure_prob(
+                        unmeasured_prob=subcircuit_inst_prob, meas=meas
+                    )
+                    subcircuit_measured_probs[(instance_init_meas[0], meas)] = (
+                        measured_prob
+                    )
 
             subcircuit_entry_probs = {}
             for k, v in self.subcircuit_entries[subcircuit].items():
