@@ -45,6 +45,14 @@ def example_circuit():
 
 if __name__ == "__main__":
     circuit = example_circuit()
+    from qiskit.quantum_info import Statevector
+
+    probs = Statevector.from_instruction(circuit).probabilities()
+    print(probs)
+    import sys
+
+    sys.exit(0)
+
     cut_circuit = CutCircuit(circuit)
     print(cut_circuit)
 

@@ -2,15 +2,10 @@ import itertools, copy, pickle, subprocess, psutil, os
 import numpy as np
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.circuit.library.standard_gates import HGate, SGate, SdgGate, XGate
-
-from cutqc2.cutqc.helper_functions.non_ibmq_functions import (
-    find_process_jobs,
-    scrambled,
-    evaluate_circ,
-)
+from qiskit.quantum_info import Statevector
 
 
-def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, backend: str = "statevector_simulator"):
+def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas):
     subcircuit_measured_probs = {}
     for instance_init_meas in subcircuit_instance_init_meas:
         if "Z" in instance_init_meas[1]:
@@ -21,9 +16,7 @@ def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, backend:
             meas=instance_init_meas[1],
         )
 
-        subcircuit_inst_prob = evaluate_circ(
-            circuit=subcircuit_instance, backend=backend
-        )
+        subcircuit_inst_prob = Statevector.from_instruction(subcircuit_instance).probabilities()
 
         mutated_meas = mutate_measurement_basis(meas=instance_init_meas[1])
         for meas in mutated_meas:

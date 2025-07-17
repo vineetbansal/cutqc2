@@ -9,11 +9,11 @@ from qiskit.circuit.library import UnitaryGate
 from qiskit.circuit import Qubit, QuantumRegister, CircuitInstruction
 from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
+from qiskit.quantum_info import Statevector
 
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
 from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins, DynamicDefinition
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
-from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
 from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.core.dag import DagNode, DAGEdge
@@ -241,7 +241,7 @@ class CutCircuit:
         max_subcircuit_cuts: int,
         subcircuit_size_imbalance: int,
     ):
-        from cutqc2.cutqc.cutqc.cutter import MIP_Model
+        from cutqc2.core.optim import MIP_Model
 
         n_vertices, edges, vertex_ids, id_vertices, id_to_dag_edge = (
             self.inter_wire_dag_metadata["n_vertices"],
@@ -477,17 +477,12 @@ class CutCircuit:
             cut_edges=cut_edges_pairs, generate_subcircuits=generate_subcircuits
         )
 
-    def run_subcircuits(
-        self,
-        subcircuits: list[int] | None = None,
-        backend: str = "statevector_simulator",
-    ):
+    def run_subcircuits(self, subcircuits: list[int] | None = None):
         subcircuits = subcircuits or range(len(self))
         for subcircuit in subcircuits:
             subcircuit_measured_probs = run_subcircuit_instances(
                 subcircuit=self[subcircuit],
                 subcircuit_instance_init_meas=self.subcircuit_instances[subcircuit],
-                backend=backend,
             )
             self.subcircuit_entry_probs[subcircuit] = attribute_shots(
                 subcircuit_measured_probs=subcircuit_measured_probs,
@@ -518,17 +513,13 @@ class CutCircuit:
         )
         return reconstructed_prob
 
-    def get_ground_truth(self, backend: str) -> np.ndarray:
-        return evaluate_circ(circuit=self.raw_circuit, backend=backend)
-
     def verify(
         self,
         reconstructed_probabilities: np.ndarray | None = None,
-        backend: str = "statevector_simulator",
         atol: float = 1e-10,
     ):
         reconstructed_probabilities = reconstructed_probabilities or self.postprocess()
-        ground_truth = self.get_ground_truth(backend)
+        ground_truth = Statevector.from_instruction(self.raw_circuit).probabilities()
 
         approximation_error = (
             MSE(target=ground_truth, obs=reconstructed_probabilities)
