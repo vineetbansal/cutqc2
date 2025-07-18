@@ -9,7 +9,6 @@ Subpackages
 
    cutqc2.core
    cutqc2.cupy
-   cutqc2.io
 
 Submodules
 ----------

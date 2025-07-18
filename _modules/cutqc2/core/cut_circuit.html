@@ -33,18 +33,14 @@
           <div class="body" role="main">
             
   <h1>Source code for cutqc2.core.cut_circuit</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantumCircuit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.circuit.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnitaryGate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.circuit</span><span class="w"> </span><span class="kn">import</span> <span class="n">Qubit</span><span class="p">,</span> <span class="n">QuantumRegister</span><span class="p">,</span> <span class="n">CircuitInstruction</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">circuit_to_dag</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.dagcircuit.dagcircuit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAGOpNode</span><span class="p">,</span> <span class="n">DAGCircuit</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.evaluator</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_subcircuit_instances</span><span class="p">,</span> <span class="n">attribute_shots</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.dynamic_definition</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_dd_bins</span><span class="p">,</span> <span class="n">DynamicDefinition</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.compute_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeGraph</span>
@@ -78,24 +74,21 @@
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_valid</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span> <span class="o">=</span> <span class="n">circuit</span>
         <span class="k">if</span> <span class="n">add_labels</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_labeled_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_inter_wire_dag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dag_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_wire_dag</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="c1"># location of cuts, as (&lt;wire_index&gt;, &lt;gate_index&gt;) tuples</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruction_qubit_order</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># location of cuts, as (&lt;instruction_label&gt;, &lt;wire_index&gt;) tuples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">fold</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span><span class="p">)</span>
@@ -126,21 +119,6 @@
             <span class="k">assert</span> <span class="n">op_node</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;barrier&quot;</span><span class="p">,</span> <span class="p">(</span>
                 <span class="s2">&quot;Please remove barriers from the circuit before cutting&quot;</span>
             <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="CutCircuit.from_file">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.from_file">[docs]</a>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">filepath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
-
-        <span class="c1"># Keep imports local to this function</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.h5</span><span class="w"> </span><span class="kn">import</span> <span class="n">h5_to_cut_circuit</span>
-
-        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">h5_to_cut_circuit</span><span class="p">}</span>
-        <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="n">supported_formats</span><span class="p">,</span> <span class="s2">&quot;Unsupported format&quot;</span>
-        <span class="k">return</span> <span class="n">supported_formats</span><span class="p">[</span><span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span><span class="p">](</span><span class="n">filepath</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.get_labeled_circuit">
@@ -341,30 +319,6 @@
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;No viable cuts found&quot;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.add_cut_at_position">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.add_cut_at_position">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">add_cut_at_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">gate_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="n">cut_qubit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="n">wire_index</span><span class="p">]</span>
-
-        <span class="n">cut_wire_position</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">instr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">cut_qubit</span> <span class="ow">in</span> <span class="n">instr</span><span class="o">.</span><span class="n">qubits</span><span class="p">:</span>  <span class="c1"># we&#39;re on the right wire</span>
-                <span class="k">if</span> <span class="n">cut_wire_position</span> <span class="o">==</span> <span class="n">gate_index</span><span class="p">:</span>
-                    <span class="n">cut_instr</span> <span class="o">=</span> <span class="n">CircuitInstruction</span><span class="p">(</span><span class="n">WireCutGate</span><span class="p">(),</span> <span class="n">qubits</span><span class="o">=</span><span class="p">(</span><span class="n">cut_qubit</span><span class="p">,))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cut_instr</span><span class="p">)</span>
-                    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="k">break</span>
-                <span class="n">cut_wire_position</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">wire_index</span><span class="p">,</span> <span class="n">gate_index</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Gate index &#39;</span><span class="si">{</span><span class="n">gate_index</span><span class="si">}</span><span class="s2">&#39; or wire </span><span class="si">{</span><span class="n">wire_index</span><span class="si">}</span><span class="s2"> not found in the circuit. Cannot add cut.&quot;</span>
-            <span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="CutCircuit.add_cut">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.add_cut">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">add_cut</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
@@ -374,9 +328,6 @@
 <span class="sd">            label: The label of the instruction after which the cut should be made.</span>
 <span class="sd">            wire_index: The index of the wire where the cut should be made.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cut_qubit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="n">wire_index</span><span class="p">]</span>
-        <span class="n">gate_counter</span> <span class="o">=</span> <span class="p">{</span><span class="n">qubit</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">qubit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">}</span>
-
         <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">instr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">instr</span><span class="o">.</span><span class="n">operation</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">label</span><span class="p">:</span>
@@ -384,17 +335,11 @@
                 <span class="n">cut_instr</span> <span class="o">=</span> <span class="n">CircuitInstruction</span><span class="p">(</span><span class="n">WireCutGate</span><span class="p">(),</span> <span class="n">qubits</span><span class="o">=</span><span class="p">(</span><span class="n">cut_qubit</span><span class="p">,))</span>
                 <span class="c1"># insert the cut instruction right after the current instruction</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cut_instr</span><span class="p">)</span>
-                <span class="c1"># Also add to unlabeled circuit (for visualization purposes)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">cut_instr</span><span class="p">)</span>
                 <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">break</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">qubit</span> <span class="ow">in</span> <span class="n">instr</span><span class="o">.</span><span class="n">qubits</span><span class="p">:</span>
-                    <span class="n">gate_counter</span><span class="p">[</span><span class="n">qubit</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
-            <span class="n">gate_index</span> <span class="o">=</span> <span class="n">gate_counter</span><span class="p">[</span><span class="n">cut_qubit</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">wire_index</span><span class="p">,</span> <span class="n">gate_index</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">label</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Label &#39;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&#39; or wire </span><span class="si">{</span><span class="n">wire_index</span><span class="si">}</span><span class="s2"> not found in the circuit. Cannot add cut.&quot;</span>
@@ -421,42 +366,15 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">add_cut</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">wire_index</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">generate_subcircuits</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generate_subcircuits</span><span class="p">()</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_subcircuits</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cuts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cut_edges</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotated_subcircuits</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># populated by `populate_annotated_subcircuits()`</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_cuts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cuts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">populate_annotated_subcircuits</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">populate_compute_graph</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">populate_subcircuit_entries</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reconstruction_qubit_order</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
-        <span class="n">subcircuit_out_qubits</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">subcircuit_idx</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">subcircuit_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
-        <span class="p">}</span>
-
-        <span class="k">for</span> <span class="n">qubit</span><span class="p">,</span> <span class="n">mappings</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">output_subcircuit_index</span><span class="p">,</span> <span class="n">output_qubit</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mappings</span><span class="o">.</span><span class="n">items</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">output_subcircuit_index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">output_qubit</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">qubit</span><span class="p">),</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">subcircuit_idx</span> <span class="ow">in</span> <span class="n">subcircuit_out_qubits</span><span class="p">:</span>
-            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-                <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">],</span>
-                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span><span class="o">.</span><span class="n">qubits</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
-                <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span>
-            <span class="p">]</span>
-        <span class="k">return</span> <span class="n">subcircuit_out_qubits</span>
-
-    <span class="nd">@reconstruction_qubit_order</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">reconstruction_qubit_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruction_qubit_order</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CutCircuit.generate_subcircuits">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.generate_subcircuits">[docs]</a>
@@ -501,7 +419,7 @@
         <span class="n">subcircuit_qubits</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="n">subcircuit_ops</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">op_node</span> <span class="ow">in</span> <span class="n">circuit_to_dag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="p">)</span><span class="o">.</span><span class="n">topological_op_nodes</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">op_node</span> <span class="ow">in</span> <span class="n">circuit_to_dag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="p">)</span><span class="o">.</span><span class="n">topological_op_nodes</span><span class="p">():</span>
             <span class="n">op_node</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">op_node</span><span class="p">)</span>
             <span class="n">subcircuit_qubits</span> <span class="o">|=</span> <span class="nb">set</span><span class="p">(</span><span class="n">op_node</span><span class="o">.</span><span class="n">qargs</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">op_node</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cut&quot;</span><span class="p">:</span>
@@ -521,12 +439,7 @@
             <span class="n">subcircuit</span> <span class="o">=</span> <span class="n">remap_qubits</span><span class="p">(</span>
                 <span class="n">subcircuit_ops</span><span class="p">,</span> <span class="n">subcircuit_qubits</span><span class="p">,</span> <span class="n">subcircuit_i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_mapping</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcircuit</span><span class="p">)</span>
-
-        <span class="c1"># book-keeping tasks</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">populate_annotated_subcircuits</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">populate_compute_graph</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">populate_subcircuit_entries</span><span class="p">()</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcircuit</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.cut">
@@ -538,7 +451,6 @@
         <span class="n">num_subcircuits</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">max_subcircuit_cuts</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">subcircuit_size_imbalance</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">generate_subcircuits</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="n">cut_edges_pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_cuts</span><span class="p">(</span>
             <span class="n">max_subcircuit_width</span><span class="o">=</span><span class="n">max_subcircuit_width</span><span class="p">,</span>
@@ -548,34 +460,29 @@
             <span class="n">subcircuit_size_imbalance</span><span class="o">=</span><span class="n">subcircuit_size_imbalance</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_cuts</span><span class="p">(</span>
-            <span class="n">cut_edges</span><span class="o">=</span><span class="n">cut_edges_pairs</span><span class="p">,</span> <span class="n">generate_subcircuits</span><span class="o">=</span><span class="n">generate_subcircuits</span>
-        <span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_cuts</span><span class="p">(</span><span class="n">cut_edges</span><span class="o">=</span><span class="n">cut_edges_pairs</span><span class="p">,</span> <span class="n">generate_subcircuits</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.run_subcircuits">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.run_subcircuits">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_subcircuits</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">subcircuits</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;statevector_simulator&quot;</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="n">subcircuits</span> <span class="o">=</span> <span class="n">subcircuits</span> <span class="ow">or</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
-        <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="n">subcircuits</span><span class="p">:</span>
+<div class="viewcode-block" id="CutCircuit.legacy_evaluate">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.legacy_evaluate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">legacy_evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">subcircuit_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
             <span class="n">subcircuit_measured_probs</span> <span class="o">=</span> <span class="n">run_subcircuit_instances</span><span class="p">(</span>
-                <span class="n">subcircuit</span><span class="o">=</span><span class="bp">self</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">],</span>
-                <span class="n">subcircuit_instance_init_meas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_instances</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">],</span>
-                <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+                <span class="n">subcircuit</span><span class="o">=</span><span class="bp">self</span><span class="p">[</span><span class="n">subcircuit_index</span><span class="p">],</span>
+                <span class="n">subcircuit_instance_init_meas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_instances</span><span class="p">[</span>
+                    <span class="n">subcircuit_index</span>
+                <span class="p">],</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="o">=</span> <span class="n">attribute_shots</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span><span class="p">[</span><span class="n">subcircuit_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">attribute_shots</span><span class="p">(</span>
                 <span class="n">subcircuit_measured_probs</span><span class="o">=</span><span class="n">subcircuit_measured_probs</span><span class="p">,</span>
-                <span class="n">subcircuit_entries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entries</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">],</span>
+                <span class="n">subcircuit_entries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entries</span><span class="p">[</span><span class="n">subcircuit_index</span><span class="p">],</span>
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.compute_probabilities">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mem_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recursion_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="CutCircuit.legacy_build">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.legacy_build">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">legacy_build</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mem_limit</span><span class="p">,</span> <span class="n">recursion_depth</span><span class="p">):</span>
         <span class="n">dd</span> <span class="o">=</span> <span class="n">DynamicDefinition</span><span class="p">(</span>
             <span class="n">compute_graph</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="p">,</span>
             <span class="n">num_cuts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_cuts</span><span class="p">,</span>
@@ -584,44 +491,25 @@
             <span class="n">recursion_depth</span><span class="o">=</span><span class="n">recursion_depth</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">dd_bins</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">dd_bins</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_recursions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.postprocess">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.postprocess">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;approximation_bins&quot;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities</span><span class="p">()</span>
-
-        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
-            <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span><span class="p">,</span>
-            <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span><span class="p">,</span>
+<div class="viewcode-block" id="CutCircuit.legacy_verify">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.legacy_verify">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">legacy_verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">):</span>
+        <span class="n">ground_truth</span> <span class="o">=</span> <span class="n">evaluate_circ</span><span class="p">(</span>
+            <span class="n">circuit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;statevector_simulator&quot;</span>
         <span class="p">)</span>
-        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
+        <span class="n">subcircuit_out_qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reconstruction_qubit_order</span><span class="p">()</span>
+        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
+            <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="n">subcircuit_out_qubits</span><span class="p">,</span> <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span>
+        <span class="p">)</span>
+        <span class="n">real_probability</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
             <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">reconstructed_prob</span></div>
-
-
-<div class="viewcode-block" id="CutCircuit.get_ground_truth">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_ground_truth">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_ground_truth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">evaluate_circ</span><span class="p">(</span><span class="n">circuit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_circuit</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="CutCircuit.verify">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.verify">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">reconstructed_probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;statevector_simulator&quot;</span><span class="p">,</span>
-        <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">reconstructed_probabilities</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocess</span><span class="p">()</span>
-        <span class="n">ground_truth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ground_truth</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
-
         <span class="n">approximation_error</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">MSE</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">reconstructed_probabilities</span><span class="p">)</span>
+            <span class="n">MSE</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">ground_truth</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">real_probability</span><span class="p">)</span>
             <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span>
             <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
         <span class="p">)</span>
@@ -728,14 +616,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_instances</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">subcircuit_entries</span><span class="p">,</span>
             <span class="n">subcircuit_instances</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span> <span class="o">=</span> <span class="p">{}</span></div>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.populate_annotated_subcircuits">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.populate_annotated_subcircuits">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_annotated_subcircuits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">annotated_subcircuits</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">subcircuit_idx</span><span class="p">,</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">annotated_subcircuits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;effective&quot;</span><span class="p">:</span> <span class="n">subcircuit</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">,</span>
@@ -749,18 +635,36 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">annotated_subcircuits</span><span class="p">[</span><span class="n">subcircuit_index</span><span class="p">][</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.to_file">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.to_file">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">filepath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+<div class="viewcode-block" id="CutCircuit.get_reconstruction_qubit_order">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_reconstruction_qubit_order">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reconstruction_qubit_order</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the output qubit in the full circuit for each subcircuit</span>
+<span class="sd">        Qiskit orders the full circuit output in descending order of qubits</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">subcircuit_out_qubits</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">subcircuit_idx</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">subcircuit_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="p">}</span>
 
-        <span class="c1"># Keep imports local to this function</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.h5</span><span class="w"> </span><span class="kn">import</span> <span class="n">cut_circuit_to_h5</span>
+        <span class="k">for</span> <span class="n">qubit</span><span class="p">,</span> <span class="n">mappings</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">output_subcircuit_index</span><span class="p">,</span> <span class="n">output_qubit</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mappings</span><span class="o">.</span><span class="n">items</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">output_subcircuit_index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">output_qubit</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">qubit</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
 
-        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">cut_circuit_to_h5</span><span class="p">}</span>
-        <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="n">supported_formats</span><span class="p">,</span> <span class="s2">&quot;Unsupported format&quot;</span>
-        <span class="k">return</span> <span class="n">supported_formats</span><span class="p">[</span><span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span><span class="p">](</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">for</span> <span class="n">subcircuit_idx</span> <span class="ow">in</span> <span class="n">subcircuit_out_qubits</span><span class="p">:</span>
+            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">],</span>
+                <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span><span class="o">.</span><span class="n">qubits</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">subcircuit_out_qubits</span><span class="p">[</span><span class="n">subcircuit_idx</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">subcircuit_out_qubits</span></div>
 </div>
 
 </pre></div>
