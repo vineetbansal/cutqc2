@@ -165,7 +165,10 @@ class DynamicDefinition:
         return next_dd_schedule
 
     def distribute_load(self, capacities):
-        total_load = min(sum(capacities.values()), self.mem_limit)
+        if self.mem_limit is None:
+            total_load = sum(capacities.values())
+        else:
+            total_load = min(sum(capacities.values()), self.mem_limit)
         total_capacity = sum(capacities.values())
         loads = {subcircuit_idx: 0 for subcircuit_idx in capacities}
 

@@ -10,7 +10,7 @@ from cutqc2.cutqc.helper_functions.non_ibmq_functions import (
 )
 
 
-def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas):
+def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas, backend: str = "statevector_simulator"):
     subcircuit_measured_probs = {}
     for instance_init_meas in subcircuit_instance_init_meas:
         if "Z" in instance_init_meas[1]:
@@ -22,7 +22,7 @@ def run_subcircuit_instances(subcircuit, subcircuit_instance_init_meas):
         )
 
         subcircuit_inst_prob = evaluate_circ(
-            circuit=subcircuit_instance, backend="statevector_simulator"
+            circuit=subcircuit_instance, backend=backend
         )
 
         mutated_meas = mutate_measurement_basis(meas=instance_init_meas[1])
