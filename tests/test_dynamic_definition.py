@@ -1,5 +1,5 @@
 import numpy as np
-from qiskit.circuit.quantumregister import QuantumRegister, Qubit
+from qiskit.circuit import QuantumRegister, Qubit
 from cutqc2.cutqc.cutqc.dynamic_definition import DynamicDefinition
 
 
