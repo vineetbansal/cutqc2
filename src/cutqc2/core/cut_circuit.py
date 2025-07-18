@@ -8,7 +8,7 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.library import UnitaryGate
 from qiskit.circuit import Qubit, QuantumRegister, CircuitInstruction
 from qiskit.converters import circuit_to_dag
-from qiskit.dagcircuit.dagcircuit import DAGOpNode, DAGCircuit
+from qiskit.dagcircuit import DAGOpNode, DAGCircuit
 
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
 from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins, DynamicDefinition
@@ -169,18 +169,18 @@ class CutCircuit:
 
             qubit_gate_counter[arg0] += 1
             qubit_gate_counter[arg1] += 1
-            if vertex_name not in node_name_ids and id(vertex) not in vertex_ids:
+            if vertex_name not in node_name_ids and hash(vertex) not in vertex_ids:
                 node_name_ids[vertex_name] = curr_node_id
                 id_node_names[curr_node_id] = vertex_name
                 id_to_dag_edge[curr_node_id] = dag_edge
-                vertex_ids[id(vertex)] = curr_node_id
+                vertex_ids[hash(vertex)] = curr_node_id
 
                 curr_node_id += 1
 
         for u, v, _ in dag.edges():
             if isinstance(u, DAGOpNode) and isinstance(v, DAGOpNode):
-                u_id = vertex_ids[id(u)]
-                v_id = vertex_ids[id(v)]
+                u_id = vertex_ids[hash(u)]
+                v_id = vertex_ids[hash(v)]
                 edges.append((u_id, v_id))
 
         n_vertices = dag.size()
