@@ -315,6 +315,8 @@ def full_verify(full_circuit, complete_path_map, subcircuits, dd_bins):
 def merge_prob_vector(unmerged_prob_vector, qubit_states):
     num_active = qubit_states.count("active")
     num_merged = qubit_states.count("merged")
+    if num_active + num_merged == 0:  # no effective qubits
+        return unmerged_prob_vector
     merged_prob_vector = np.zeros(2**num_active, dtype="float32")
     # print('merging with qubit states {}. {:d}-->{:d}'.format(
     #     qubit_states,
