@@ -3,7 +3,6 @@ from copy import deepcopy
 import itertools
 import numpy as np
 from typing import Self
-from collections import namedtuple, defaultdict
 from dataclasses import dataclass
 
 from qiskit import QuantumCircuit
