@@ -377,64 +377,119 @@ class CutCircuit:
                 node_label_to_subcircuits[dag_edge.source.name] = subcircuit_i
 
         n_subcircuits = len(subcircuits)
-        # qubit => {<subcircuit_i>: <qubit in subcircuit>}
-        self.qubit_mapping = {qubit: {} for qubit in self.circuit.qubits}
+        self.complete_path_map = {qubit: [] for qubit in self.circuit.qubits}
 
         subcircuit_instructions = {j: [] for j in range(n_subcircuits)}
-        wire_map = {subcircuit_i: {q: [] for q in range(self.circuit.num_qubits)} for subcircuit_i in range(n_subcircuits) }
+        # subcircuit_i => {wire_index: wire_indices in subcircuit}
+        wire_map = {subcircuit_i: {q: set() for q in range(self.circuit.num_qubits)} for subcircuit_i in range(n_subcircuits) }
         wire_index_to_pending_single_qubit_instrs = {q: [] for q in range(self.circuit.num_qubits)}
         wire_index_to_last_seen_subcircuit = {q: None for q in range(self.circuit.num_qubits)}
 
         dag = circuit_to_dag(self.circuit)
 
         for j, op_node in enumerate(dag.topological_op_nodes()):
-            wire_indices = [op_node.qargs[0]._index]
             op = deepcopy(op_node.op)
             op.label = ""  # strip label
 
+            if op.name == "tdg":
+                print("break")
+
             if op_node.label in node_label_to_subcircuits:
                 assert len(op_node.qargs) == 2
-                wire_indices.append(op_node.qargs[1]._index)
+                wire_index0, wire_index1 = op_node.qargs[0]._index, op_node.qargs[1]._index
 
                 subcircuit_i = node_label_to_subcircuits[op_node.label]
-                for wire_index in wire_indices:
-                    if wire_index_to_pending_single_qubit_instrs[wire_index]:
-                        # flush all pending instructions on this wire to the
-                        # current subcircuit
-                        subcircuit_instructions[subcircuit_i].extend(
-                            wire_index_to_pending_single_qubit_instrs[wire_index]
-                        )
-                        wire_index_to_pending_single_qubit_instrs[wire_index] = []
+                for wire_index in (wire_index0, wire_index1):
 
                     subcircuit_wire_map = wire_map[subcircuit_i]
                     if not subcircuit_wire_map[wire_index]:
-                        subcircuit_wire_map[wire_index] = [len(subcircuit_wire_map)]
+                        # Add a new entry for this wire in the subcircuit wire map
+                        subcircuit_n_wires = sum([len(s) for s in subcircuit_wire_map.values()])
+                        subcircuit_wire_map[wire_index].add(subcircuit_n_wires)
+
+                    has_cut = (len(wire_index_to_pending_single_qubit_instrs[wire_index]) > 0 and
+                               wire_index_to_pending_single_qubit_instrs[wire_index][-1].op.name == "cut")
+                    if has_cut:
+                        # We need to introduce a new qubit wire!
+                        # Add a new entry for this wire in the subcircuit wire map
+                        subcircuit_i = wire_index_to_last_seen_subcircuit[wire_index]
+                        subcircuit_wire_map = wire_map[subcircuit_i]
+                        subcircuit_n_wires = sum([len(s) for s in subcircuit_wire_map.values()])
+                        subcircuit_wire_map[wire_index].add(subcircuit_n_wires)
+
+                        # Remove the "cut" instruction from pending
+                        wire_index_to_pending_single_qubit_instrs[wire_index].pop()
+
+                        # Flush all pending single-qubit instructions on this wire to the
+                        # current subcircuit, updating instructions as we go.
+                        for pending in wire_index_to_pending_single_qubit_instrs[wire_index]:
+                            to_insert = Instruction(
+                                op=pending.op,
+                                qarg0=max(wire_map[subcircuit_i][wire_index]),
+                                qarg1=None
+                            )
+                            subcircuit_instructions[subcircuit_i].append(pending)
+                        # reset
+                        wire_index_to_pending_single_qubit_instrs[wire_index] = []
 
                 instr = Instruction(
                     op,
-                    wire_map[subcircuit_i][wire_indices[0]],
-                    wire_map[subcircuit_i][wire_indices[1]]
+                    max(wire_map[subcircuit_i][wire_index0]),
+                    max(wire_map[subcircuit_i][wire_index1])
                 )
                 subcircuit_instructions[subcircuit_i].append(instr)
 
-                wire_index_to_last_seen_subcircuit[wire_indices[0]] = subcircuit_i
-                wire_index_to_last_seen_subcircuit[wire_indices[1]] = subcircuit_i
+                wire_index_to_last_seen_subcircuit[wire_index0] = subcircuit_i
+                wire_index_to_last_seen_subcircuit[wire_index1] = subcircuit_i
 
             else:
                 assert len(op_node.qargs) == 1
-                wire_index0 = wire_indices[0]
-                if op_node.name == "cut":
-                    # We need to introduce a new qubit wire for this subcircuit and
-                    # this wire index
-                    wire_map[subcircuit_i][wire_indices[0]] = len(wire_map[subcircuit_i])
-                    continue
+                wire_index0 = op_node.qargs[0]._index
 
-                instr = Instruction(op, wire_index0, None)
+                if op_node.name == "cut":
+                    print("break")
+                # if op_node.name == "cut":
+                #     # We need to introduce a new qubit wire!
+                #     # Add a new entry for this wire in the subcircuit wire map
+                #     subcircuit_i = wire_index_to_last_seen_subcircuit[wire_index0]
+                #     subcircuit_wire_map = wire_map[subcircuit_i]
+                #     subcircuit_n_wires = sum(
+                #         [len(s) for s in subcircuit_wire_map.values()])
+                #     wire_map[subcircuit_i][wire_index0].add(subcircuit_n_wires)
+                #     continue
+
+                has_cut = len(wire_index_to_pending_single_qubit_instrs[
+                              wire_index0]) > 0 and wire_index_to_pending_single_qubit_instrs[
+                              wire_index0][-1].op.name == "cut"
+                if has_cut:
+                    # We need to introduce a new qubit wire!
+                    # Add a new entry for this wire in the subcircuit wire map
+                    subcircuit_i = wire_index_to_last_seen_subcircuit[
+                        wire_index0]
+                    subcircuit_wire_map = wire_map[subcircuit_i]
+                    subcircuit_n_wires = sum(
+                        [len(s) for s in subcircuit_wire_map.values()])
+                    subcircuit_wire_map[wire_index].add(subcircuit_n_wires)
+
+                    # Remove the "cut" instruction from pending
+                    wire_index_to_pending_single_qubit_instrs[wire_index0].pop()
+
                 if (subcircuit_i := wire_index_to_last_seen_subcircuit[wire_index0]) is not None:
+                    instr = Instruction(
+                        op,
+                        max(wire_map[subcircuit_i][wire_index0]),
+                        None
+                    )
                     subcircuit_instructions[subcircuit_i].append(instr)
                 else:
+                    instr = Instruction(
+                        op,
+                        None,  # will be filled in later during flushing
+                        None
+                    )
                     wire_index_to_pending_single_qubit_instrs[wire_index0].append(instr)
 
+        # Create actual CircuitInstructions from what we have collected
         for subcircuit_i, instrs in subcircuit_instructions.items():
             subcircuit_size = max(wire_map[subcircuit_i].values()) + 1
             instructions = []
