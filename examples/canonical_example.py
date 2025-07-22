@@ -7,12 +7,12 @@ import qiskit
 from cutqc2.core.cut_circuit import CutCircuit
 from cutqc2.cutqc.helper_functions.benchmarks import generate_circ 
 
-def adder():  
+def supremacy():  
   num_qubits=6
   circuit = generate_circ(
       num_qubits=num_qubits,
       depth=1,
-      circuit_type="adder",
+      circuit_type="supremacy",
       reg_name="q",
       connected_only=True,
       seed=None,
@@ -30,7 +30,7 @@ def adder():
   return circuit, cutter_constraints
 
 if __name__ == "__main__":
-    circuit, cutter_constraints = adder ()    
+    circuit, cutter_constraints = supremacy ()    
     cut_circuit = CutCircuit(circuit)
         
     # Cut the circuit automatically with specified parameters.
