@@ -257,37 +257,31 @@
 <span class="sd">        trace operators for each of the Pauli bases (eq. 2 in paper).</span>
 
 <span class="sd">                 0   1   +   i</span>
+<span class="sd">            0    1</span>
 <span class="sd">            I    1   1</span>
 <span class="sd">            X   -1  -1   2</span>
 <span class="sd">            Y   -1  -1       2</span>
 <span class="sd">            Z    1  -1</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">terms</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
             <span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
             <span class="s2">&quot;X&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;plus&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
             <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;plusI&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
             <span class="s2">&quot;Z&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zero&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;one&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">},</span>
         <span class="p">}</span>
 
+        <span class="n">substitution_lists</span> <span class="o">=</span> <span class="p">[</span><span class="n">terms</span><span class="p">[</span><span class="n">pauli</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">for</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="n">paulis</span><span class="p">]</span>
+
         <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">pauli_base_found</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">paulis</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">pauli_base_found</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Use of multiple Pauli bases is not supported&quot;</span><span class="p">)</span>
-
-                <span class="n">pauli_base_found</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">for</span> <span class="n">ket</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="n">terms</span><span class="p">[</span><span class="n">pauli</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="c1"># create a tuple of paulis, replacing the pauli at index i with ket</span>
-                    <span class="n">bases</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                        <span class="p">[</span><span class="n">ket</span> <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="n">i</span> <span class="k">else</span> <span class="n">pauli</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">pauli</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">paulis</span><span class="p">)]</span>
-                    <span class="p">)</span>
-                    <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">coeff</span><span class="p">,</span> <span class="n">bases</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">pauli_base_found</span><span class="p">:</span>
-            <span class="c1"># If no Pauli base was found, return the original initialization</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">paulis</span><span class="p">)))</span>
-
+        <span class="k">for</span> <span class="n">combo</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">substitution_lists</span><span class="p">):</span>
+            <span class="n">coeff</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">combo</span><span class="p">:</span>
+                <span class="n">coeff</span> <span class="o">*=</span> <span class="n">c</span>
+                <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">coeff</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">labels</span><span class="p">)))</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 
