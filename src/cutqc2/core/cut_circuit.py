@@ -194,7 +194,9 @@ class CutCircuit:
         }
 
     @staticmethod
-    def get_initializations(paulis: list[str]) -> list[tuple[int, tuple[str]]]:
+    def get_initializations(
+        paulis: list[str], legacy: bool = True
+    ) -> list[tuple[int, tuple[str]]]:
         """
         Get coefficients and kets used for each term in the expansion of the
         trace operators for each of the Pauli bases (eq. 2 in paper).
@@ -205,6 +207,19 @@ class CutCircuit:
             Y   -1  -1       2
             Z    1  -1
         """
+
+        if legacy:
+            from cutqc2.legacy.cutqc.cutqc.post_process_helper import (
+                get_instance_init_meas,
+                convert_to_physical_init,
+            )
+
+            initializations = paulis
+            measurements = []  # not used
+            results = get_instance_init_meas(initializations, measurements)
+            coeffs_kets = [convert_to_physical_init(result[0]) for result in results]
+            return coeffs_kets
+
         terms = {
             "I": {"zero": 1, "one": 1},
             "X": {"zero": -1, "one": -1, "plus": 2},
