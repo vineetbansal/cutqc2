@@ -1,6 +1,6 @@
 from itertools import product
 from qiskit.circuit import Qubit
-from qiskit.dagcircuit import DAGCircuit
+from qiskit.dagcircuit import DAGOpNode, DAGCircuit
 
 
 class DagNode:

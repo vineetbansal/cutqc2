@@ -72,3 +72,16 @@ def testZ():
     # kets should populate at the location of the Pauli basis
     assert (1, ("zero", "zero", "zero", "zero")) in coeffs_kets
     assert (-1, ("zero", "zero", "one", "zero")) in coeffs_kets
+
+
+def testIX():
+    initializations = ["I", "X"]
+    coeffs_kets = CutCircuit.get_initializations(initializations, legacy=True)
+
+    assert len(coeffs_kets) == 6
+    assert (2, ('zero', 'plus')) in coeffs_kets
+    assert (-1, ('zero', 'zero')) in coeffs_kets
+    assert (-1, ('zero', 'one')) in coeffs_kets
+    assert (2, ('one', 'plus')) in coeffs_kets
+    assert (-1, ('one', 'zero')) in coeffs_kets
+    assert (-1, ('one', 'one')) in coeffs_kets
