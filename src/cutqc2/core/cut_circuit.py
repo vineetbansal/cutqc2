@@ -200,37 +200,31 @@ class CutCircuit:
         trace operators for each of the Pauli bases (eq. 2 in paper).
 
                  0   1   +   i
+            0    1
             I    1   1
             X   -1  -1   2
             Y   -1  -1       2
             Z    1  -1
+
         """
         terms = {
+            "zero": {"zero": 1},
             "I": {"zero": 1, "one": 1},
             "X": {"zero": -1, "one": -1, "plus": 2},
             "Y": {"zero": -1, "one": -1, "plusI": 2},
             "Z": {"zero": 1, "one": -1},
         }
 
+        substitution_lists = [terms[pauli].items() for pauli in paulis]
+
         result = []
-        pauli_base_found = False
-        for i, pauli in enumerate(paulis):
-            if pauli in terms:
-                if pauli_base_found:
-                    raise ValueError("Use of multiple Pauli bases is not supported")
-
-                pauli_base_found = True
-                for ket, coeff in terms[pauli].items():
-                    # create a tuple of paulis, replacing the pauli at index i with ket
-                    bases = tuple(
-                        [ket if j == i else pauli for j, pauli in enumerate(paulis)]
-                    )
-                    result.append((coeff, bases))
-
-        if not pauli_base_found:
-            # If no Pauli base was found, return the original initialization
-            result.append((1, tuple(paulis)))
-
+        for combo in itertools.product(*substitution_lists):
+            coeff = 1
+            labels = []
+            for label, c in combo:
+                coeff *= c
+                labels.append(label)
+            result.append((coeff, tuple(labels)))
         return result
 
     def find_cuts(
