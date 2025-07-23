@@ -39,6 +39,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.qasm2</span><span class="w"> </span><span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.cut_circuit</span><span class="w"> </span><span class="kn">import</span> <span class="n">CutCircuit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.dag</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAGEdge</span>
 
 
 <div class="viewcode-block" id="cut_circuit_to_h5">
@@ -57,11 +58,28 @@
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">num_cuts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">cuts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-                <span class="n">cut_circuit</span><span class="o">.</span><span class="n">cuts</span><span class="p">,</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;wire_index&quot;</span><span class="p">,</span> <span class="s2">&quot;i4&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;gate_index&quot;</span><span class="p">,</span> <span class="s2">&quot;i4&quot;</span><span class="p">)]),</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                <span class="s2">&quot;cuts&quot;</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">src</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">dest</span><span class="p">))</span>
+                        <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dest</span> <span class="ow">in</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">cut_dagedgepairs</span>
+                    <span class="p">],</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="n">str_type</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;dest&quot;</span><span class="p">,</span> <span class="n">str_type</span><span class="p">)]),</span>
+                <span class="p">),</span>
             <span class="p">)</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;cuts&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cuts_array</span><span class="p">)</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;subcircuits&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="p">(</span>
+                <span class="n">subcircuit_i</span><span class="p">,</span>
+                <span class="n">subcircuit_dagedges</span><span class="p">,</span>
+            <span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">subcircuit_dagedges</span><span class="p">):</span>
+                <span class="n">group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">subcircuit_i</span><span class="p">),</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                        <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">subcircuit_dagedges</span><span class="p">],</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">str_type</span><span class="p">),</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
 
             <span class="n">group</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;subcircuit_mapping&quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -91,11 +109,23 @@
 
         <span class="k">if</span> <span class="s2">&quot;cuts&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">cuts</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;cuts&quot;</span><span class="p">][()]</span>
-            <span class="k">for</span> <span class="n">cut</span> <span class="ow">in</span> <span class="n">cuts</span><span class="p">:</span>
-                <span class="n">cut_circuit</span><span class="o">.</span><span class="n">add_cut_at_position</span><span class="p">(</span>
-                    <span class="n">wire_index</span><span class="o">=</span><span class="n">cut</span><span class="p">[</span><span class="s2">&quot;wire_index&quot;</span><span class="p">],</span> <span class="n">gate_index</span><span class="o">=</span><span class="n">cut</span><span class="p">[</span><span class="s2">&quot;gate_index&quot;</span><span class="p">]</span>
+            <span class="n">cut_edge_pairs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span>
+                    <span class="n">DAGEdge</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)),</span>
+                    <span class="n">DAGEdge</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">dest</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)),</span>
                 <span class="p">)</span>
-            <span class="n">cut_circuit</span><span class="o">.</span><span class="n">generate_subcircuits</span><span class="p">()</span>
+                <span class="k">for</span> <span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dest</span><span class="p">)</span> <span class="ow">in</span> <span class="n">cuts</span>
+            <span class="p">]</span>
+            <span class="n">subcircuit_dagedges</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;subcircuits&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">subcircuit_n_dagedges</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">DAGEdge</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">edge</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">[()]</span>
+                <span class="p">]</span>
+                <span class="n">subcircuit_dagedges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcircuit_n_dagedges</span><span class="p">)</span>
+
+            <span class="n">cut_circuit</span><span class="o">.</span><span class="n">add_cuts_and_generate_subcircuits</span><span class="p">(</span>
+                <span class="n">cut_edge_pairs</span><span class="p">,</span> <span class="n">subcircuit_dagedges</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;subcircuit_mapping&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">mapping</span> <span class="o">=</span> <span class="p">{}</span>

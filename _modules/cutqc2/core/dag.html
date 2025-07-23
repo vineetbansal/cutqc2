@@ -55,6 +55,24 @@
 <span class="sd">        name (str): The name of the node (default &#39;q&#39;).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+<div class="viewcode-block" id="DagNode.from_string">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.dag.DagNode.from_string">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_string</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a DagNode from a string representation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            s (str): The string representation of the node in the format &#39;name[wire_index]gate_index&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DagNode: The created DagNode instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)</span>
+        <span class="n">wire_index</span><span class="p">,</span> <span class="n">gate_index</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">rest</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">wire_index</span><span class="p">,</span> <span class="n">gate_index</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wire_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">gate_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;q&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize a DagNode.</span>
@@ -76,6 +94,13 @@
 <span class="sd">            str: The string in the format &#39;name[wire_index]gate_index&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">[</span><span class="si">%d</span><span class="s2">]</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wire_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gate_index</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;DagNode&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">wire_index</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">wire_index</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">gate_index</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">gate_index</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;DagNode&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -149,6 +174,23 @@
 <span class="sd">        dest (DagNode): The destination node of the edge.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+<div class="viewcode-block" id="DAGEdge.from_string">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.dag.DAGEdge.from_string">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_string</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">edge_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DAGEdge&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a DAGEdge from a string representation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            edge_str (str): The string representation of the edge in the format &#39;source dest&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DAGEdge: The created DAGEdge instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">source_str</span><span class="p">,</span> <span class="n">dest_str</span> <span class="o">=</span> <span class="n">edge_str</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">DagNode</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">source_str</span><span class="p">),</span> <span class="n">DagNode</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">dest_str</span><span class="p">))</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">first</span><span class="p">:</span> <span class="n">DagNode</span><span class="p">,</span> <span class="n">second</span><span class="p">:</span> <span class="n">DagNode</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize a DAGEdge between two DagNodes.</span>
@@ -167,6 +209,9 @@
 <span class="sd">            str: The string in the format &#39;source dest&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dest</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;DAGEdge&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">source</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dest</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">dest</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;DAGEdge&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">DagNode</span><span class="p">,</span> <span class="n">DagNode</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

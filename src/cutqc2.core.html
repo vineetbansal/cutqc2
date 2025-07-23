@@ -48,7 +48,7 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut">
-<span class="sig-name descname"><span class="pre">add_cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wire_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add_cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wire_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cut" title="Link to this definition">¶</a></dt>
 <dd><p>Add a cut to the circuit at the position of the instruction with the specified label.
 :type label: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>
 :param label: The label of the instruction after which the cut should be made.
@@ -63,7 +63,12 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cuts">
-<span class="sig-name descname"><span class="pre">add_cuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut_edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_subcircuits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cuts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cuts" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add_cuts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut_edges</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cuts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cuts" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cuts_and_generate_subcircuits">
+<span class="sig-name descname"><span class="pre">add_cuts_and_generate_subcircuits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cut_edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuits</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.add_cuts_and_generate_subcircuits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.add_cuts_and_generate_subcircuits" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -97,8 +102,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.generate_subcircuits">
-<span class="sig-name descname"><span class="pre">generate_subcircuits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.generate_subcircuits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.generate_subcircuits" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_counter">
+<span class="sig-name descname"><span class="pre">get_counter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_counter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_counter" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -123,7 +128,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_initializations">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_initializations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paulis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_initializations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_initializations" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_initializations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paulis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_initializations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_initializations" title="Link to this definition">¶</a></dt>
 <dd><p>Get coefficients and kets used for each term in the expansion of the
 trace operators for each of the Pauli bases (eq. 2 in paper).
 :rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]</span></p>
@@ -165,11 +170,6 @@ preserve gates that span two wires.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.num_cuts">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_cuts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.num_cuts" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.populate_annotated_subcircuits">
-<span class="sig-name descname"><span class="pre">populate_annotated_subcircuits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.populate_annotated_subcircuits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.populate_annotated_subcircuits" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -221,6 +221,38 @@ preserve gates that span two wires.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.Instruction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">Instruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qarg0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qarg1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#Instruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.Instruction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.Instruction.max_qarg">
+<span class="sig-name descname"><span class="pre">max_qarg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#Instruction.max_qarg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.Instruction.max_qarg" title="Link to this definition">¶</a></dt>
+<dd><p>Get the maximum qarg index used in this instruction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.Instruction.op">
+<span class="sig-name descname"><span class="pre">op</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></em><a class="headerlink" href="#cutqc2.core.cut_circuit.Instruction.op" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.Instruction.qarg0">
+<span class="sig-name descname"><span class="pre">qarg0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#cutqc2.core.cut_circuit.Instruction.qarg0" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.Instruction.qarg1">
+<span class="sig-name descname"><span class="pre">qarg1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> <span class="pre">|</span> <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#cutqc2.core.cut_circuit.Instruction.qarg1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.WireCutGate">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">WireCutGate</span></span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#WireCutGate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.WireCutGate" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">UnitaryGate</span></code></p>
@@ -253,6 +285,23 @@ preserve gates that span two wires.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#cutqc2.core.dag.DagNode" title="cutqc2.core.dag.DagNode">DagNode</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.dag.DAGEdge.from_string">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edge_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DAGEdge.from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DAGEdge.from_string" title="Link to this definition">¶</a></dt>
+<dd><p>Create a DAGEdge from a string representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>edge_str</strong> (<em>str</em>) – The string representation of the edge in the format ‘source dest’.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created DAGEdge instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#cutqc2.core.dag.DAGEdge" title="cutqc2.core.dag.DAGEdge">DAGEdge</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -307,6 +356,23 @@ Note: <cite>gate_index</cite> assumes that only inter-wire gates are considered.
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.dag.DagNode.from_string">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dag.html#DagNode.from_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dag.DagNode.from_string" title="Link to this definition">¶</a></dt>
+<dd><p>Create a DagNode from a string representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> (<em>str</em>) – The string representation of the node in the format ‘name[wire_index]gate_index’.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created DagNode instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#cutqc2.core.dag.DagNode" title="cutqc2.core.dag.DagNode">DagNode</a></p>
 </dd>
 </dl>
 </dd></dl>
