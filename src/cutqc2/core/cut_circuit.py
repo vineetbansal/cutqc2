@@ -27,6 +27,14 @@ class Instruction:
     qarg0: int | None = None  # index of the first qubit in the subcircuit
     qarg1: int | None = None  # index of the second qubit in the subcircuit
 
+    def max_qarg(self) -> int:
+        """
+        Get the maximum qarg index used in this instruction.
+        """
+        if self.qarg1 is not None:
+            return max(self.qarg0, self.qarg1)
+        return self.qarg0
+
 
 class WireCutGate(UnitaryGate):
     """
@@ -254,6 +262,34 @@ class CutCircuit:
 
         return result
 
+    def get_counter(self):
+        O_rho_pairs = []
+        for input_qubit in self.complete_path_map:
+            path = self.complete_path_map[input_qubit]
+            if len(path) > 1:
+                for path_ctr, item in enumerate(path[:-1]):
+                    O_qubit_tuple = item
+                    rho_qubit_tuple = path[path_ctr + 1]
+                    O_rho_pairs.append((O_qubit_tuple, rho_qubit_tuple))
+
+        counter = {}
+        for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
+            counter[subcircuit_idx] = {
+                "effective": subcircuit.num_qubits,
+                "rho": 0,
+                "O": 0,
+                "d": subcircuit.num_qubits,
+                "depth": subcircuit.depth(),
+                "size": subcircuit.size(),
+            }
+        for pair in O_rho_pairs:
+            O_qubit, rho_qubit = pair
+            counter[O_qubit["subcircuit_idx"]]["effective"] -= 1
+            counter[O_qubit["subcircuit_idx"]]["O"] += 1
+            counter[rho_qubit["subcircuit_idx"]]["rho"] += 1
+
+        return counter
+
     def find_cuts(
         self,
         max_subcircuit_width: int,
@@ -357,8 +393,7 @@ class CutCircuit:
 
     def add_cuts(
         self,
-        cut_edges: list[tuple[DAGEdge, DAGEdge]],
-        generate_subcircuits: bool = True,
+        cut_edges: list[tuple[DAGEdge, DAGEdge]]
     ):
         # validate cut_edges
         for cut_edge in cut_edges:
@@ -369,10 +404,9 @@ class CutCircuit:
                 )
             self.add_cut(p.name, p.wire_index)
 
-        if generate_subcircuits:
-            self.generate_subcircuits()
-
     def add_cuts_and_generate_subcircuits(self, cut_edges, subcircuits):
+
+        self.add_cuts(cut_edges=cut_edges)
 
         node_label_to_subcircuits: dict[str, int] = {}
         for subcircuit_i, dag_edges in enumerate(subcircuits):
@@ -383,28 +417,23 @@ class CutCircuit:
 
         n_subcircuits = len(subcircuits)
 
-        self.complete_path_map = {qubit: [] for qubit in self.circuit.qubits}
-        subcircuit_instructions = {j: [] for j in range(n_subcircuits)}
-        subcircuit_size: dict[int, int] = {j: 0 for j in range(n_subcircuits)}
-
-        # The following 2 dictionaries provide the same information,
-        # but make for easier access in different contexts.
-
-        # wire_index: {subcircuit_i: list of qubit indices}
-        wire_map: dict[int, dict[int, list[int]]] = {q: {} for q in range(self.circuit.num_qubits)}
+        subcircuit_instructions: dict[int, Instruction] = {j: [] for j in range(n_subcircuits)}
+        next_subcircuit_wire_index: dict[int, int] = {j: 0 for j in range(n_subcircuits)}
 
         # subcircuit_i: {wire_index: list of qubit indices}
         subcircuit_map: dict[int, dict[int, list[int]]] = {j: {} for j in range(n_subcircuits)}
 
+        # wire_index: list of <subcircuit_i, subcircuit_qubit_index> tuples
+        complete_path_map: dict[int, list[tuple[int, int]]] = {q: [] for q in range(self.circuit.num_qubits)}
+
         # What is the last subcircuit index we saw on a given wire?
-        current_subciruit_on_wire = {q: None for q in range(self.circuit.num_qubits)}
+        current_subciruit_on_wire: dict[int, int] = {q: None for q in range(self.circuit.num_qubits)}
 
         # Instructions on a qubit wire for which we haven't assigned a
         # subcircuit yet.
         pending_instructions_on_wire: dict[int, list[Instruction]] = {q: [] for q in range(self.circuit.num_qubits)}
 
         dag = circuit_to_dag(self.circuit)
-
         for j, op_node in enumerate(dag.topological_op_nodes()):
             op = deepcopy(op_node.op)
             op.label = ""
@@ -418,22 +447,39 @@ class CutCircuit:
                 subcircuit_wire_indices = []
                 for wire_index in (wire_index0, wire_index1):
 
+                    prev_subcircuit_i = current_subciruit_on_wire[wire_index]
+                    # If the subcircuit on this wire has changed, then we have
+                    # a cut.
+                    if prev_subcircuit_i is not None and prev_subcircuit_i != subcircuit_i:
+                        # For the existing ("current") subcircuit on this wire,
+                        # add a new qubit wire for this wire index.
+                        subcircuit_wire_index = next_subcircuit_wire_index[prev_subcircuit_i]
+                        subcircuit_map[prev_subcircuit_i][wire_index].append(subcircuit_wire_index)
+                        next_subcircuit_wire_index[prev_subcircuit_i] += 1
+
                     current_subciruit_on_wire[wire_index] = subcircuit_i
+
+                    subcircuit_wire_index = subcircuit_map[subcircuit_i].get(wire_index)
+                    if subcircuit_wire_index is None:
+                        subcircuit_wire_index = next_subcircuit_wire_index[subcircuit_i]
+                        subcircuit_map[subcircuit_i][wire_index] = [subcircuit_wire_index]
+                        next_subcircuit_wire_index[subcircuit_i] += 1
+                    else:
+                        subcircuit_wire_index = subcircuit_wire_index[-1]
 
                     # Flush any pending instructions on this wire to this
                     # subcircuit's instructions
                     while pending_instructions_on_wire[wire_index]:
                         pending = pending_instructions_on_wire[wire_index].pop(0)
-                        pending.qarg0 = subcircuit_i
+                        pending.qarg0 = subcircuit_wire_index
                         subcircuit_instructions[subcircuit_i].append(pending)
 
-                    subcircuit_wire_index = subcircuit_map[subcircuit_i].get(wire_index)
-                    if subcircuit_wire_index is None:
-                        subcircuit_wire_index = subcircuit_size[subcircuit_i]
-                        subcircuit_map[subcircuit_i][wire_index] = [subcircuit_wire_index]
-                        subcircuit_size[subcircuit_i] += 1
-                    else:
-                        subcircuit_wire_index = subcircuit_wire_index[-1]
+                    # If the current entry in the complete path map is not
+                    # the same as the last one, append it.
+                    if len(complete_path_map[wire_index]) == 0 or complete_path_map[wire_index][-1] != (subcircuit_i, subcircuit_wire_index):
+                        complete_path_map[wire_index].append(
+                            (subcircuit_i, subcircuit_wire_index))
+
                     subcircuit_wire_indices.append(subcircuit_wire_index)
 
                 # Add the instruction to the subcircuit
@@ -448,13 +494,8 @@ class CutCircuit:
                 assert len(op_node.qargs) == 1
                 wire_index0 = op_node.qargs[0]._index
 
+                # ignore cut nodes
                 if op_node.name == "cut":
-                    # For the current subcircuit on this wire, add a new qubit
-                    # wire for this wire index
-                    subcircuit_i = current_subciruit_on_wire[wire_index0]
-                    subcircuit_wire_index = subcircuit_size[subcircuit_i]
-                    subcircuit_map[subcircuit_i][wire_index].append(subcircuit_wire_index)
-                    subcircuit_size[subcircuit_i] += 1
                     continue
 
                 # We're looking at a regular single-qubit gate
@@ -473,11 +514,10 @@ class CutCircuit:
                     )
                     subcircuit_instructions[subcircuit_i].append(instr)
 
-        # ================================= #
-
-        # Create actual CircuitInstructions from what we have collected
+        # Create actual CircuitInstructions from `subcircuit_instructions`
         for subcircuit_i, instrs in subcircuit_instructions.items():
-            subcircuit_size = max(wire_map[subcircuit_i].values()) + 1
+            subcircuit_size = max(instr.max_qarg() for instr in instrs) + 1
+
             instructions = []
             for instr in instrs:
                 if instr.qarg1 is not None:
@@ -504,8 +544,16 @@ class CutCircuit:
                 QuantumCircuit.from_instructions(instructions)
             )
 
+        self.complete_path_map: dict[Qubit, list[dict]] = {qubit: [] for qubit in self.circuit.qubits}
+        for wire_index, path in complete_path_map.items():
+            qubit = self.circuit.qubits[wire_index]
+            for subcircuit_i, qubit_index in path:
+                self.complete_path_map[qubit].append({
+                    "subcircuit_idx": subcircuit_i,
+                    "subcircuit_qubit": self.subcircuits[subcircuit_i].qubits[qubit_index],
+                })
+
         # book-keeping tasks
-        self.populate_annotated_subcircuits()
         self.populate_compute_graph()
         self.populate_subcircuit_entries()
 
@@ -518,16 +566,13 @@ class CutCircuit:
         subcircuit_out_qubits = {
             subcircuit_idx: [] for subcircuit_idx in range(len(self))
         }
-
-        for qubit, mappings in self.qubit_mapping.items():
-            output_subcircuit_index, output_qubit = list(mappings.items())[-1]
-            subcircuit_out_qubits[output_subcircuit_index].append(
-                (
-                    output_qubit,
-                    self.circuit.qubits.index(qubit),
-                )
+        for input_qubit in self.complete_path_map:
+            path = self.complete_path_map[input_qubit]
+            output_qubit = path[-1]
+            subcircuit_out_qubits[output_qubit["subcircuit_idx"]].append(
+                (output_qubit["subcircuit_qubit"],
+                 self.circuit.qubits.index(input_qubit))
             )
-
         for subcircuit_idx in subcircuit_out_qubits:
             subcircuit_out_qubits[subcircuit_idx] = sorted(
                 subcircuit_out_qubits[subcircuit_idx],
@@ -542,74 +587,6 @@ class CutCircuit:
     @reconstruction_qubit_order.setter
     def reconstruction_qubit_order(self, value: dict[int, list[int]]):
         self._reconstruction_qubit_order = deepcopy(value)
-
-    def generate_subcircuits(self):
-        # TODO: Cache results intelligently based on cut positions:
-        # We may not have to regenerate everything in all cases
-        def remap_qubits(
-            subcircuit_ops: list[DAGOpNode],
-            subcircuit_qubits: set[Qubit],
-            subcircuit_i: int,
-            qubit_mapping: dict[Qubit, dict[int, Qubit]],
-        ) -> QuantumCircuit:
-            subcircuit_qubit_i = 0
-            subcircuit_size = len(subcircuit_qubits)
-            for qubit in subcircuit_qubits:
-                if subcircuit_i not in qubit_mapping[qubit]:
-                    new_qubit = Qubit(
-                        QuantumRegister(subcircuit_size, "q"), subcircuit_qubit_i
-                    )
-                    qubit_mapping[qubit][subcircuit_i] = new_qubit
-                    subcircuit_qubit_i += 1
-
-            for subcircuit_op in subcircuit_ops:
-                subcircuit_op.qargs = tuple(
-                    qubit_mapping[qarg][subcircuit_i] for qarg in subcircuit_op.qargs
-                )
-
-            instructions = []
-            for subcircuit_op in subcircuit_ops:
-                instructions.append(
-                    CircuitInstruction(
-                        operation=subcircuit_op.op, qubits=subcircuit_op.qargs
-                    )
-                )
-            return QuantumCircuit.from_instructions(instructions)
-
-        # qubit => {<subcircuit_i>: <qubit in subcircuit>}
-        self.qubit_mapping = {qubit: {} for qubit in self.circuit.qubits}
-
-        self.subcircuits = []
-        subcircuit_i = 0
-        subcircuit_qubits = set()
-        subcircuit_ops = []
-
-        for op_node in circuit_to_dag(self.unlabeled_circuit).topological_op_nodes():
-            op_node = deepcopy(op_node)
-            subcircuit_qubits |= set(op_node.qargs)
-            if op_node.name == "cut":
-                subcircuit = remap_qubits(
-                    subcircuit_ops, subcircuit_qubits, subcircuit_i, self.qubit_mapping
-                )
-                self.subcircuits.append(subcircuit)
-
-                subcircuit_i += 1
-                subcircuit_qubits = set()
-                subcircuit_ops = []
-            else:
-                subcircuit_ops.append(op_node)
-
-        # create last subcircuit
-        if subcircuit_ops:
-            subcircuit = remap_qubits(
-                subcircuit_ops, subcircuit_qubits, subcircuit_i, self.qubit_mapping
-            )
-            self.subcircuits.append(subcircuit)
-
-        # book-keeping tasks
-        self.populate_annotated_subcircuits()
-        self.populate_compute_graph()
-        self.populate_subcircuit_entries()
 
     def cut(
         self,
@@ -628,9 +605,6 @@ class CutCircuit:
             subcircuit_size_imbalance=subcircuit_size_imbalance,
         )
 
-        self.add_cuts(
-            cut_edges=cut_edges_pairs, generate_subcircuits=False
-        )
         self.add_cuts_and_generate_subcircuits(
             cut_edges=cut_edges_pairs, subcircuits=subcircuits
         )
@@ -702,28 +676,28 @@ class CutCircuit:
         """
         Generate the connection graph among subcircuits
         """
-        annotated_subcircuits = self.annotated_subcircuits
         subcircuits = self.subcircuits
 
         self.compute_graph = ComputeGraph()
-        for subcircuit_idx in annotated_subcircuits:
-            subcircuit_attributes = deepcopy(annotated_subcircuits[subcircuit_idx])
+        counter = self.get_counter()
+        for subcircuit_idx, subcircuit_attributes in counter.items():
+            subcircuit_attributes = deepcopy(subcircuit_attributes)
             subcircuit_attributes["subcircuit"] = subcircuits[subcircuit_idx]
             self.compute_graph.add_node(
                 subcircuit_idx=subcircuit_idx, attributes=subcircuit_attributes
             )
 
-        for qubit, mappings in self.qubit_mapping.items():
-            mappings_keys = list(mappings.keys())
-            for upstream_subcircuit_index, downstream_subcircuit_index in zip(
-                mappings_keys, mappings_keys[1:]
-            ):
+        for circuit_qubit in self.complete_path_map:
+            path = self.complete_path_map[circuit_qubit]
+            for counter in range(len(path) - 1):
+                upstream_subcircuit_idx = path[counter]["subcircuit_idx"]
+                downstream_subcircuit_idx = path[counter + 1]["subcircuit_idx"]
                 self.compute_graph.add_edge(
-                    u_for_edge=upstream_subcircuit_index,
-                    v_for_edge=downstream_subcircuit_index,
+                    u_for_edge=upstream_subcircuit_idx,
+                    v_for_edge=downstream_subcircuit_idx,
                     attributes={
-                        "O_qubit": mappings[upstream_subcircuit_index],
-                        "rho_qubit": mappings[downstream_subcircuit_index],
+                        "O_qubit": path[counter]["subcircuit_qubit"],
+                        "rho_qubit": path[counter + 1]["subcircuit_qubit"],
                     },
                 )
 
@@ -792,20 +766,6 @@ class CutCircuit:
             subcircuit_instances,
         )
         self.subcircuit_entry_probs = {}
-
-    def populate_annotated_subcircuits(self):
-        self.annotated_subcircuits = {}
-        for subcircuit_idx, subcircuit in enumerate(self.subcircuits):
-            self.annotated_subcircuits[subcircuit_idx] = {
-                "effective": subcircuit.num_qubits,
-            }
-
-        for mappings in self.qubit_mapping.values():
-            subcircuit_indices = list(mappings.keys())
-            # all but the last subcircuit index in subcircuit_indices
-            # has their effective qubits reduce by 1
-            for subcircuit_index in subcircuit_indices[:-1]:
-                self.annotated_subcircuits[subcircuit_index]["effective"] -= 1
 
     def to_file(self, filepath: str | Path, *args, **kwargs) -> None:
         if isinstance(filepath, str):
