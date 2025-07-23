@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 from typing import Self
 from dataclasses import dataclass
+import warnings
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.operation import Operation
@@ -65,9 +66,13 @@ class CutCircuit:
         self.inter_wire_dag = self.get_inter_wire_dag(self.circuit)
         self.inter_wire_dag_metadata = self.get_dag_metadata(self.inter_wire_dag)
 
-        self.subcircuits = []
         # location of cuts, as (<wire_index>, <gate_index>) tuples
         self.cuts: list[tuple[int, int]] = []
+        self.subcircuits: list[QuantumCircuit] = []
+
+        # DAGEdge pairs that represent the cuts and subcircuits
+        self.cut_dagedgepairs: list[tuple[DAGEdge, DAGEdge]] = []
+        self.subcircuit_dagedges: list[list[DAGEdge]] = []
 
         self._reconstruction_qubit_order = None
 
@@ -211,7 +216,9 @@ class CutCircuit:
         }
 
     @staticmethod
-    def get_initializations(paulis: list[str], legacy: bool = True) -> list[tuple[int, tuple[str]]]:
+    def get_initializations(
+        paulis: list[str], legacy: bool = True
+    ) -> list[tuple[int, tuple[str]]]:
         """
         Get coefficients and kets used for each term in the expansion of the
         trace operators for each of the Pauli bases (eq. 2 in paper).
@@ -224,15 +231,15 @@ class CutCircuit:
         """
 
         if legacy:
-            from cutqc2.legacy.cutqc.cutqc.post_process_helper import \
-                get_instance_init_meas, convert_to_physical_init
+            from cutqc2.legacy.cutqc.cutqc.post_process_helper import (
+                get_instance_init_meas,
+                convert_to_physical_init,
+            )
 
             initializations = paulis
             measurements = []  # not used
             results = get_instance_init_meas(initializations, measurements)
-            coeffs_kets = [
-                convert_to_physical_init(result[0]) for result in results
-            ]
+            coeffs_kets = [convert_to_physical_init(result[0]) for result in results]
             return coeffs_kets
         terms = {
             "I": {"zero": 1, "one": 1},
@@ -333,7 +340,7 @@ class CutCircuit:
             )
 
             if mip_model.solve():
-                return mip_model.cut_edges_pairs, mip_model.subcircuits2
+                return mip_model.cut_edges_pairs, mip_model.subcircuits
             else:
                 raise RuntimeError("No viable cuts found")
 
@@ -358,13 +365,16 @@ class CutCircuit:
                 f"Gate index '{gate_index}' or wire {wire_index} not found in the circuit. Cannot add cut."
             )
 
-    def add_cut(self, label: str, wire_index: int):
+    def add_cut(self, label: str, wire_index: int, gate_index: int):
         """
         Add a cut to the circuit at the position of the instruction with the specified label.
         Args:
             label: The label of the instruction after which the cut should be made.
             wire_index: The index of the wire where the cut should be made.
         """
+        warnings.warn(
+            "Method `add_cut` is deprecated. Use `add_cut_at_position` instead."
+        )
         cut_qubit = self.circuit.qubits[wire_index]
         gate_counter = {qubit: 0 for qubit in self.circuit.qubits}
 
@@ -391,10 +401,7 @@ class CutCircuit:
                 f"Label '{label}' or wire {wire_index} not found in the circuit. Cannot add cut."
             )
 
-    def add_cuts(
-        self,
-        cut_edges: list[tuple[DAGEdge, DAGEdge]]
-    ):
+    def add_cuts(self, cut_edges: list[tuple[DAGEdge, DAGEdge]]):
         # validate cut_edges
         for cut_edge in cut_edges:
             p, q = cut_edge[0] | cut_edge[1]
@@ -402,11 +409,14 @@ class CutCircuit:
                 raise ValueError(
                     "Invalid cut - the cut edge does not connect two adjacent gates."
                 )
-            self.add_cut(p.name, p.wire_index)
+            self.cut_dagedgepairs.append(cut_edge)
+            self.add_cut_at_position(p.wire_index, p.gate_index)
 
-    def add_cuts_and_generate_subcircuits(self, cut_edges, subcircuits):
-
+    def add_cuts_and_generate_subcircuits(
+        self, cut_edges: list[tuple[DAGEdge, DAGEdge]], subcircuits: list[list[DAGEdge]]
+    ):
         self.add_cuts(cut_edges=cut_edges)
+        self.subcircuit_dagedges = subcircuits
 
         node_label_to_subcircuits: dict[str, int] = {}
         for subcircuit_i, dag_edges in enumerate(subcircuits):
@@ -417,21 +427,33 @@ class CutCircuit:
 
         n_subcircuits = len(subcircuits)
 
-        subcircuit_instructions: dict[int, Instruction] = {j: [] for j in range(n_subcircuits)}
-        next_subcircuit_wire_index: dict[int, int] = {j: 0 for j in range(n_subcircuits)}
+        subcircuit_instructions: dict[int, Instruction] = {
+            j: [] for j in range(n_subcircuits)
+        }
+        next_subcircuit_wire_index: dict[int, int] = {
+            j: 0 for j in range(n_subcircuits)
+        }
 
         # subcircuit_i: {wire_index: list of qubit indices}
-        subcircuit_map: dict[int, dict[int, list[int]]] = {j: {} for j in range(n_subcircuits)}
+        subcircuit_map: dict[int, dict[int, list[int]]] = {
+            j: {} for j in range(n_subcircuits)
+        }
 
         # wire_index: list of <subcircuit_i, subcircuit_qubit_index> tuples
-        complete_path_map: dict[int, list[tuple[int, int]]] = {q: [] for q in range(self.circuit.num_qubits)}
+        complete_path_map: dict[int, list[tuple[int, int]]] = {
+            q: [] for q in range(self.circuit.num_qubits)
+        }
 
         # What is the last subcircuit index we saw on a given wire?
-        current_subciruit_on_wire: dict[int, int] = {q: None for q in range(self.circuit.num_qubits)}
+        current_subciruit_on_wire: dict[int, int] = {
+            q: None for q in range(self.circuit.num_qubits)
+        }
 
         # Instructions on a qubit wire for which we haven't assigned a
         # subcircuit yet.
-        pending_instructions_on_wire: dict[int, list[Instruction]] = {q: [] for q in range(self.circuit.num_qubits)}
+        pending_instructions_on_wire: dict[int, list[Instruction]] = {
+            q: [] for q in range(self.circuit.num_qubits)
+        }
 
         dag = circuit_to_dag(self.circuit)
         for j, op_node in enumerate(dag.topological_op_nodes()):
@@ -441,20 +463,29 @@ class CutCircuit:
             if op_node.label in node_label_to_subcircuits:
                 # We're looking at a 2-qubit gate, for which we have a subcircuit index
                 assert len(op_node.qargs) == 2
-                wire_index0, wire_index1 = op_node.qargs[0]._index, op_node.qargs[1]._index
+                wire_index0, wire_index1 = (
+                    op_node.qargs[0]._index,
+                    op_node.qargs[1]._index,
+                )
                 subcircuit_i = node_label_to_subcircuits[op_node.label]
 
                 subcircuit_wire_indices = []
                 for wire_index in (wire_index0, wire_index1):
-
                     prev_subcircuit_i = current_subciruit_on_wire[wire_index]
                     # If the subcircuit on this wire has changed, then we have
                     # a cut.
-                    if prev_subcircuit_i is not None and prev_subcircuit_i != subcircuit_i:
+                    if (
+                        prev_subcircuit_i is not None
+                        and prev_subcircuit_i != subcircuit_i
+                    ):
                         # For the existing ("current") subcircuit on this wire,
                         # add a new qubit wire for this wire index.
-                        subcircuit_wire_index = next_subcircuit_wire_index[prev_subcircuit_i]
-                        subcircuit_map[prev_subcircuit_i][wire_index].append(subcircuit_wire_index)
+                        subcircuit_wire_index = next_subcircuit_wire_index[
+                            prev_subcircuit_i
+                        ]
+                        subcircuit_map[prev_subcircuit_i][wire_index].append(
+                            subcircuit_wire_index
+                        )
                         next_subcircuit_wire_index[prev_subcircuit_i] += 1
 
                     current_subciruit_on_wire[wire_index] = subcircuit_i
@@ -462,7 +493,9 @@ class CutCircuit:
                     subcircuit_wire_index = subcircuit_map[subcircuit_i].get(wire_index)
                     if subcircuit_wire_index is None:
                         subcircuit_wire_index = next_subcircuit_wire_index[subcircuit_i]
-                        subcircuit_map[subcircuit_i][wire_index] = [subcircuit_wire_index]
+                        subcircuit_map[subcircuit_i][wire_index] = [
+                            subcircuit_wire_index
+                        ]
                         next_subcircuit_wire_index[subcircuit_i] += 1
                     else:
                         subcircuit_wire_index = subcircuit_wire_index[-1]
@@ -476,9 +509,12 @@ class CutCircuit:
 
                     # If the current entry in the complete path map is not
                     # the same as the last one, append it.
-                    if len(complete_path_map[wire_index]) == 0 or complete_path_map[wire_index][-1] != (subcircuit_i, subcircuit_wire_index):
+                    if len(complete_path_map[wire_index]) == 0 or complete_path_map[
+                        wire_index
+                    ][-1] != (subcircuit_i, subcircuit_wire_index):
                         complete_path_map[wire_index].append(
-                            (subcircuit_i, subcircuit_wire_index))
+                            (subcircuit_i, subcircuit_wire_index)
+                        )
 
                     subcircuit_wire_indices.append(subcircuit_wire_index)
 
@@ -486,7 +522,7 @@ class CutCircuit:
                 instr = Instruction(
                     op=op,
                     qarg0=subcircuit_wire_indices[0],
-                    qarg1=subcircuit_wire_indices[1]
+                    qarg1=subcircuit_wire_indices[1],
                 )
                 subcircuit_instructions[subcircuit_i].append(instr)
 
@@ -503,55 +539,46 @@ class CutCircuit:
                     instr = Instruction(
                         op=op,
                         qarg0=None,  # will be filled in later during flushing
-                        qarg1=None
+                        qarg1=None,
                     )
                     pending_instructions_on_wire[wire_index0].append(instr)
                 else:
                     instr = Instruction(
                         op=op,
                         qarg0=subcircuit_map[subcircuit_i][wire_index0][-1],
-                        qarg1=None
+                        qarg1=None,
                     )
                     subcircuit_instructions[subcircuit_i].append(instr)
 
-        # Create actual CircuitInstructions from `subcircuit_instructions`
+        # Create actual subcircuit from `subcircuit_instructions`
         for subcircuit_i, instrs in subcircuit_instructions.items():
             subcircuit_size = max(instr.max_qarg() for instr in instrs) + 1
+            subcircuit = QuantumCircuit(subcircuit_size, name="q")
+            qreg = QuantumRegister(subcircuit_size, "q")
 
-            instructions = []
             for instr in instrs:
-                if instr.qarg1 is not None:
-                    instructions.append(
-                        CircuitInstruction(
-                            operation=instr.op,
-                            qubits=(
-                                Qubit(QuantumRegister(subcircuit_size, "q"), instr.qarg0),
-                                Qubit(QuantumRegister(subcircuit_size, "q"), instr.qarg1),
-                            )
-                        )
-                    )
-                else:
-                    instructions.append(
-                        CircuitInstruction(
-                            operation=instr.op,
-                            qubits=(
-                                Qubit(QuantumRegister(subcircuit_size, "q"), instr.qarg0),
-                            )
-                        )
-                    )
+                qargs = tuple(
+                    Qubit(qreg, q) for q in (instr.qarg0, instr.qarg1) if q is not None
+                )
 
-            self.subcircuits.append(
-                QuantumCircuit.from_instructions(instructions)
-            )
+                subcircuit.append(instruction=instr.op, qargs=qargs, cargs=None)
 
-        self.complete_path_map: dict[Qubit, list[dict]] = {qubit: [] for qubit in self.circuit.qubits}
+            self.subcircuits.append(subcircuit)
+
+        self.complete_path_map: dict[Qubit, list[dict]] = {
+            qubit: [] for qubit in self.circuit.qubits
+        }
         for wire_index, path in complete_path_map.items():
             qubit = self.circuit.qubits[wire_index]
             for subcircuit_i, qubit_index in path:
-                self.complete_path_map[qubit].append({
-                    "subcircuit_idx": subcircuit_i,
-                    "subcircuit_qubit": self.subcircuits[subcircuit_i].qubits[qubit_index],
-                })
+                self.complete_path_map[qubit].append(
+                    {
+                        "subcircuit_idx": subcircuit_i,
+                        "subcircuit_qubit": self.subcircuits[subcircuit_i].qubits[
+                            qubit_index
+                        ],
+                    }
+                )
 
         # book-keeping tasks
         self.populate_compute_graph()
@@ -570,8 +597,10 @@ class CutCircuit:
             path = self.complete_path_map[input_qubit]
             output_qubit = path[-1]
             subcircuit_out_qubits[output_qubit["subcircuit_idx"]].append(
-                (output_qubit["subcircuit_qubit"],
-                 self.circuit.qubits.index(input_qubit))
+                (
+                    output_qubit["subcircuit_qubit"],
+                    self.circuit.qubits.index(input_qubit),
+                )
             )
         for subcircuit_idx in subcircuit_out_qubits:
             subcircuit_out_qubits[subcircuit_idx] = sorted(

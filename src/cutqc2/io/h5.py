@@ -4,6 +4,7 @@ import numpy as np
 from qiskit.qasm2 import dumps, loads
 from cutqc2 import __version__
 from cutqc2.core.cut_circuit import CutCircuit
+from cutqc2.core.dag import DAGEdge
 
 
 def cut_circuit_to_h5(
@@ -20,11 +21,28 @@ def cut_circuit_to_h5(
         )
 
         if cut_circuit.num_cuts > 0:
-            cuts_array = np.array(
-                cut_circuit.cuts,
-                dtype=np.dtype([("wire_index", "i4"), ("gate_index", "i4")]),
+            f.create_dataset(
+                "cuts",
+                data=np.array(
+                    [
+                        (str(src), str(dest))
+                        for src, dest in cut_circuit.cut_dagedgepairs
+                    ],
+                    dtype=np.dtype([("src", str_type), ("dest", str_type)]),
+                ),
             )
-            f.create_dataset("cuts", data=cuts_array)
+            group = f.create_group("subcircuits")
+            for (
+                subcircuit_i,
+                subcircuit_dagedges,
+            ) in enumerate(cut_circuit.subcircuit_dagedges):
+                group.create_dataset(
+                    str(subcircuit_i),
+                    data=np.array(
+                        [str(edge) for edge in subcircuit_dagedges],
+                        dtype=np.dtype(str_type),
+                    ),
+                )
 
             group = f.create_group("subcircuit_mapping")
             for key, value in cut_circuit.reconstruction_qubit_order.items():
@@ -51,11 +69,23 @@ def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
 
         if "cuts" in f:
             cuts = f["cuts"][()]
-            for cut in cuts:
-                cut_circuit.add_cut_at_position(
-                    wire_index=cut["wire_index"], gate_index=cut["gate_index"]
+            cut_edge_pairs = [
+                (
+                    DAGEdge.from_string(src.decode("utf-8")),
+                    DAGEdge.from_string(dest.decode("utf-8")),
                 )
-            cut_circuit.generate_subcircuits()
+                for (src, dest) in cuts
+            ]
+            subcircuit_dagedges = []
+            for key, ds in f["subcircuits"].items():
+                subcircuit_n_dagedges = [
+                    DAGEdge.from_string(edge.decode("utf-8")) for edge in ds[()]
+                ]
+                subcircuit_dagedges.append(subcircuit_n_dagedges)
+
+            cut_circuit.add_cuts_and_generate_subcircuits(
+                cut_edge_pairs, subcircuit_dagedges
+            )
 
         if "subcircuit_mapping" in f:
             mapping = {}

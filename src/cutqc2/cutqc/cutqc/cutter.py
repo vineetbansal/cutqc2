@@ -267,7 +267,6 @@ class MIP_Model:
         if self.model.solcount > 0:
             self.objective = None
             self.subcircuits = []
-            self.subcircuits2 = []
             self.optimal = self.model.Status == gp.GRB.OPTIMAL
             self.runtime = self.model.Runtime
             self.node_count = self.model.nodecount
@@ -276,13 +275,10 @@ class MIP_Model:
 
             for i in range(self.num_subcircuit):
                 subcircuit = []
-                subcircuit2 = []
                 for j in range(self.n_vertices):
                     if abs(self.vertex_var[i][j].x) > 1e-4:
-                        subcircuit.append(self.id_vertices[j])
-                        subcircuit2.append(self.id_to_dag_edge[j])
+                        subcircuit.append(self.id_to_dag_edge[j])
                 self.subcircuits.append(subcircuit)
-                self.subcircuits2.append(subcircuit2)
             assert (
                 sum([len(subcircuit) for subcircuit in self.subcircuits])
                 == self.n_vertices
