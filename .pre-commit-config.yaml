@@ -7,7 +7,7 @@ repos:
     hooks:
       - id: ruff
         args: [ "--fix", "--show-fixes" ]
-        exclude: 'src/cutqc2/cutqc/.*'
+        exclude: ^(src/cutqc2/cutqc/.*|src/cutqc2/legacy/.*)$
       - id: ruff-format
         args: [ "--check" ]
-        exclude: 'src/cutqc2/cutqc/.*'
+        exclude: ^(src/cutqc2/cutqc/.*|src/cutqc2/legacy/.*)$

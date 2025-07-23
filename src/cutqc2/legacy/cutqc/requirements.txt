@@ -1,0 +1,13 @@
+numpy
+qiskit
+matplotlib
+pydot
+scipy
+tqdm
+pylatexenc
+scikit-learn
+tensorflow
+networkx
+gurobipy
+psutil
+qiskit-aer
