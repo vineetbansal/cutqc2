@@ -2,6 +2,7 @@
 Tests for end-end verification of cut circuits.
 """
 
+import math
 from cutqc2.cutqc.helper_functions.benchmarks import generate_circ
 from cutqc2.core.cut_circuit import CutCircuit
 
@@ -46,33 +47,22 @@ def test_figure4_verify(figure_4_qiskit_circuit):
 
 
 def test_supremacy_verify():
-    num_qubits = 6
     circuit = generate_circ(
-        num_qubits=num_qubits,
+        num_qubits=6,
         depth=1,
         circuit_type="supremacy",
         reg_name="q",
         connected_only=True,
         seed=None,
     )
-    import math
-
-    cutter_constraints = {
-        "max_subcircuit_width": math.ceil(circuit.num_qubits / 4 * 3),
-        "max_subcircuit_cuts": 10,
-        "subcircuit_size_imbalance": 2,
-        "max_cuts": 10,
-        "num_subcircuits": [3],
-    }
 
     cut_circuit = CutCircuit(circuit)
-
     cut_circuit.cut(
-        max_subcircuit_width=cutter_constraints["max_subcircuit_width"],
-        max_subcircuit_cuts=cutter_constraints["max_subcircuit_cuts"],
-        subcircuit_size_imbalance=cutter_constraints["subcircuit_size_imbalance"],
-        max_cuts=cutter_constraints["max_cuts"],
-        num_subcircuits=cutter_constraints["num_subcircuits"],
+        max_subcircuit_width=math.ceil(circuit.num_qubits / 4 * 3),
+        max_subcircuit_cuts=10,
+        subcircuit_size_imbalance=2,
+        max_cuts=10,
+        num_subcircuits=[3],
     )
 
     cut_circuit.run_subcircuits()
