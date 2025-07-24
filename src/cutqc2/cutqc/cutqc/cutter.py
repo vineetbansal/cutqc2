@@ -277,7 +277,7 @@ class MIP_Model:
                 subcircuit = []
                 for j in range(self.n_vertices):
                     if abs(self.vertex_var[i][j].x) > 1e-4:
-                        subcircuit.append(self.id_vertices[j])
+                        subcircuit.append(self.id_to_dag_edge[j])
                 self.subcircuits.append(subcircuit)
             assert (
                 sum([len(subcircuit) for subcircuit in self.subcircuits])
