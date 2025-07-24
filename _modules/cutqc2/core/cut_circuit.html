@@ -120,6 +120,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cut_dagedgepairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">DAGEdge</span><span class="p">,</span> <span class="n">DAGEdge</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_dagedges</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">DAGEdge</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">complete_path_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Qubit</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruction_qubit_order</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -640,9 +641,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">subcircuits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcircuit</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">complete_path_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Qubit</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">qubit</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">qubit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span>
-        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complete_path_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">qubit</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">qubit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">}</span>
         <span class="k">for</span> <span class="n">wire_index</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">complete_path_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">qubit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="n">wire_index</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">subcircuit_i</span><span class="p">,</span> <span class="n">qubit_index</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
