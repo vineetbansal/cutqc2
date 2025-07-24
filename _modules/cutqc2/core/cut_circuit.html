@@ -554,15 +554,26 @@
                         <span class="n">prev_subcircuit_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                         <span class="ow">and</span> <span class="n">prev_subcircuit_i</span> <span class="o">!=</span> <span class="n">subcircuit_i</span>
                     <span class="p">):</span>
-                        <span class="c1"># For the existing (&quot;current&quot;) subcircuit on this wire,</span>
+                        <span class="c1"># For the previous subcircuit on this wire,</span>
                         <span class="c1"># add a new qubit wire for this wire index.</span>
                         <span class="n">subcircuit_wire_index</span> <span class="o">=</span> <span class="n">next_subcircuit_wire_index</span><span class="p">[</span>
                             <span class="n">prev_subcircuit_i</span>
                         <span class="p">]</span>
+
+                        <span class="c1"># Find all used subcircuit qubits in the previous subcircuit.</span>
+                        <span class="n">prev_subcircuit_used_wires</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="n">j</span>
+                            <span class="k">for</span> <span class="n">wires</span> <span class="ow">in</span> <span class="n">subcircuit_map</span><span class="p">[</span><span class="n">prev_subcircuit_i</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">wires</span>
+                        <span class="p">]</span>
+                        <span class="c1"># If the previous subcircuit has used this qubit,</span>
+                        <span class="c1"># make room for more.</span>
+                        <span class="k">if</span> <span class="n">subcircuit_wire_index</span> <span class="ow">in</span> <span class="n">prev_subcircuit_used_wires</span><span class="p">:</span>
+                            <span class="n">next_subcircuit_wire_index</span><span class="p">[</span><span class="n">prev_subcircuit_i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
                         <span class="n">subcircuit_map</span><span class="p">[</span><span class="n">prev_subcircuit_i</span><span class="p">][</span><span class="n">wire_index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                             <span class="n">subcircuit_wire_index</span>
                         <span class="p">)</span>
-                        <span class="n">next_subcircuit_wire_index</span><span class="p">[</span><span class="n">prev_subcircuit_i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
 
                     <span class="n">current_subciruit_on_wire</span><span class="p">[</span><span class="n">wire_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">subcircuit_i</span>
 
