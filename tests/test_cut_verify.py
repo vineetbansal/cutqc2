@@ -6,7 +6,7 @@ from cutqc2.cutqc.helper_functions.benchmarks import generate_circ
 from cutqc2.core.cut_circuit import CutCircuit
 
 
-def test_adder():
+def test_adder_verify():
     circuit = generate_circ(
         num_qubits=4,
         depth=4,

@@ -17,7 +17,7 @@ def cut_circuit_to_h5(
         str_type = h5py.string_dtype(encoding="utf-8")
         f.create_dataset("version", data=__version__, dtype=str_type)
         f.create_dataset(
-            "uncut_circuit", data=dumps(cut_circuit.raw_circuit), dtype=str_type
+            "circuit_qasm", data=dumps(cut_circuit.raw_circuit), dtype=str_type
         )
 
         if cut_circuit.num_cuts > 0:
@@ -31,43 +31,63 @@ def cut_circuit_to_h5(
                     dtype=np.dtype([("src", str_type), ("dest", str_type)]),
                 ),
             )
-            group = f.create_group("subcircuits")
-            for (
-                subcircuit_i,
-                subcircuit_dagedges,
-            ) in enumerate(cut_circuit.subcircuit_dagedges):
-                group.create_dataset(
-                    str(subcircuit_i),
+
+            if cut_circuit.complete_path_map:
+                complete_path_map = [{}] * cut_circuit.circuit.num_qubits
+                for qubit, path in cut_circuit.complete_path_map.items():
+                    value = [
+                        (e["subcircuit_idx"], e["subcircuit_qubit"]._index)
+                        for e in path
+                    ]
+                    complete_path_map[qubit._index] = value
+
+                dtype = np.dtype([("subcircuit", "i4"), ("qubit", "i4")])
+                for j, path in enumerate(complete_path_map):
+                    f.create_dataset(
+                        f"complete_path_map/{j}",
+                        data=np.array(path, dtype=dtype),
+                    )
+
+            # Get expensive properties once
+            reconstruction_qubit_order = cut_circuit.reconstruction_qubit_order
+
+            for subcircuit_i in range(len(cut_circuit)):
+                subcircuit_group = f.create_group(f"subcircuits/{subcircuit_i}")
+
+                subcircuit_group.create_dataset(
+                    "qasm", data=dumps(cut_circuit[subcircuit_i]), dtype=str_type
+                )
+                subcircuit_group.create_dataset(
+                    "nodes",
                     data=np.array(
-                        [str(edge) for edge in subcircuit_dagedges],
+                        [
+                            str(edge)
+                            for edge in cut_circuit.subcircuit_dagedges[subcircuit_i]
+                        ],
                         dtype=np.dtype(str_type),
                     ),
                 )
 
-            group = f.create_group("subcircuit_mapping")
-            for key, value in cut_circuit.reconstruction_qubit_order.items():
-                group.create_dataset(str(key), data=np.array(value, dtype="int"))
+                value = reconstruction_qubit_order[subcircuit_i]
+                subcircuit_group.create_dataset(
+                    "qubit_order", data=np.array(value, dtype="int")
+                )
 
-            if cut_circuit.subcircuit_entry_probs:
-                group = f.create_group("subcircuit_probability_vector")
-                for (
-                    subcircuit_idx,
-                    entry_probs,
-                ) in cut_circuit.subcircuit_entry_probs.items():
-                    group = f.create_group(
-                        "subcircuit_probability_vector/" + str(subcircuit_idx)
-                    )
-                    for k, v in entry_probs.items():
+                if cut_circuit.subcircuit_entry_probs:
+                    group = f.create_group(f"subcircuits/{subcircuit_i}/probabilities")
+                    for k, v in cut_circuit.subcircuit_entry_probs[
+                        subcircuit_i
+                    ].items():
                         key = "_".join(["-".join(k[0]), "-".join(k[1])])
                         group.create_dataset(key, data=np.array(v, dtype="float64"))
 
 
 def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
     with h5py.File(filepath, "r") as f:
-        qasm_str = f["uncut_circuit"][()].decode("utf-8")
+        qasm_str = f["circuit_qasm"][()].decode("utf-8")
         cut_circuit = CutCircuit(loads(qasm_str))
 
-        if "cuts" in f:
+        if "cuts" in f and "subcircuits" in f:
             cuts = f["cuts"][()]
             cut_edge_pairs = [
                 (
@@ -76,37 +96,46 @@ def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
                 )
                 for (src, dest) in cuts
             ]
-            subcircuit_dagedges = []
-            for key, ds in f["subcircuits"].items():
+
+            subcircuit_dagedges = [None] * len(f["subcircuits"])
+
+            for subcircuit_i in f["subcircuits"]:
+                subcircuit_group = f["subcircuits"][subcircuit_i]
+                subcircuit_i = int(subcircuit_i)
+
                 subcircuit_n_dagedges = [
-                    DAGEdge.from_string(edge.decode("utf-8")) for edge in ds[()]
+                    DAGEdge.from_string(edge.decode("utf-8"))
+                    for edge in subcircuit_group["nodes"][()]
                 ]
-                subcircuit_dagedges.append(subcircuit_n_dagedges)
+                subcircuit_dagedges[subcircuit_i] = subcircuit_n_dagedges
 
             cut_circuit.add_cuts_and_generate_subcircuits(
                 cut_edge_pairs, subcircuit_dagedges
             )
 
-        if "subcircuit_mapping" in f:
-            mapping = {}
-            for key, ds in f["subcircuit_mapping"].items():
-                mapping[int(key)] = ds[()].astype(int).tolist()
-            cut_circuit.reconstruction_qubit_order = mapping
+        reconstruction_qubit_order = {}
+        entry_probs = {}
+        if "subcircuits" in f:
+            for subcircuit_i in f["subcircuits"]:
+                subcircuit_group = f["subcircuits"][subcircuit_i]
+                subcircuit_i = int(subcircuit_i)
+                if "qubit_order" in subcircuit_group:
+                    reconstruction_qubit_order[subcircuit_i] = (
+                        subcircuit_group["qubit_order"][()].astype(int).tolist()
+                    )
 
-        if "subcircuit_probability_vector" in f:
-            probs_group = f["subcircuit_probability_vector"]
-            entry_probs = {}
-            for subcircuit_idx in probs_group:
-                subgrp = probs_group[subcircuit_idx]
-                prob_dict = {}
-                for key, ds in subgrp.items():
-                    str_a, str_b = key.split("_")
-                    tuple_key = (tuple(str_a.split("-")), tuple(str_b.split("-")))
-                    prob_dict[tuple_key] = ds[()].astype(float)
-                entry_probs[int(subcircuit_idx)] = prob_dict
+                if "probabilities" in subcircuit_group:
+                    prob_group = subcircuit_group["probabilities"]
+                    prob_dict = {}
+                    for key, ds in prob_group.items():
+                        str_a, str_b = key.split("_")
+                        tuple_key = (tuple(str_a.split("-")), tuple(str_b.split("-")))
+                        prob_dict[tuple_key] = ds[()].astype(float)
+                    entry_probs[subcircuit_i] = prob_dict
+
+        if reconstruction_qubit_order:
+            cut_circuit.reconstruction_qubit_order = reconstruction_qubit_order
+        if entry_probs:
             cut_circuit.subcircuit_entry_probs = entry_probs
-
-        if "probability_vector" in f:
-            pass
 
     return cut_circuit

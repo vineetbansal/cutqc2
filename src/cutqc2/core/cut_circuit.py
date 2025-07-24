@@ -74,6 +74,7 @@ class CutCircuit:
         self.cut_dagedgepairs: list[tuple[DAGEdge, DAGEdge]] = []
         self.subcircuit_dagedges: list[list[DAGEdge]] = []
 
+        self.complete_path_map: dict[Qubit, list[dict]] = {}
         self._reconstruction_qubit_order = None
 
     def __str__(self):
@@ -559,9 +560,7 @@ class CutCircuit:
 
             self.subcircuits.append(subcircuit)
 
-        self.complete_path_map: dict[Qubit, list[dict]] = {
-            qubit: [] for qubit in self.circuit.qubits
-        }
+        self.complete_path_map = {qubit: [] for qubit in self.circuit.qubits}
         for wire_index, path in complete_path_map.items():
             qubit = self.circuit.qubits[wire_index]
             for subcircuit_i, qubit_index in path:
