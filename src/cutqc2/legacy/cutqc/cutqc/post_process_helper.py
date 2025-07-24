@@ -209,6 +209,7 @@ def get_instance_init_meas(init_label, meas_label):
 
 
 def convert_to_physical_init(init):
+    init = list(init)
     coefficient = 1
     for idx, x in enumerate(init):
         if x == "zero":

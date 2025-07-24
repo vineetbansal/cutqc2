@@ -2,6 +2,13 @@ import pytest
 from cutqc2.core.dag import DagNode, DAGEdge
 
 
+def test_dag_node_from_str():
+    node = DagNode.from_string("004[5]3")
+    assert node.name == "004"
+    assert node.wire_index == 5
+    assert node.gate_index == 3
+
+
 def test_dag_node_order1():
     # DagNodes can be ordered by their wire index
     node1 = DagNode(wire_index=0, gate_index=0)
@@ -14,6 +21,12 @@ def test_dag_node_order2():
     node1 = DagNode(wire_index=1, gate_index=3)
     node2 = DagNode(wire_index=1, gate_index=0)
     assert node2 < node1
+
+
+def test_dag_edge_from_str():
+    edge = DAGEdge.from_string("0006[5]3 0052[2]4")
+    assert edge.source == DagNode(wire_index=2, gate_index=4, name="0052")
+    assert edge.dest == DagNode(wire_index=5, gate_index=3, name="0006")
 
 
 def test_dage_edge():

@@ -18,6 +18,21 @@ class DagNode:
         name (str): The name of the node (default 'q').
     """
 
+    @classmethod
+    def from_string(cls, s: str):
+        """
+        Create a DagNode from a string representation.
+
+        Args:
+            s (str): The string representation of the node in the format 'name[wire_index]gate_index'.
+
+        Returns:
+            DagNode: The created DagNode instance.
+        """
+        name, rest = s.split("[")
+        wire_index, gate_index = map(int, rest.split("]"))
+        return cls(wire_index, gate_index, name)
+
     def __init__(self, wire_index: int, gate_index: int, name: str = "q"):
         """
         Initialize a DagNode.
@@ -39,6 +54,13 @@ class DagNode:
             str: The string in the format 'name[wire_index]gate_index'.
         """
         return "%s[%d]%d" % (self.name, self.wire_index, self.gate_index)
+
+    def __eq__(self, other: "DagNode"):
+        return (
+            self.wire_index == other.wire_index
+            and self.gate_index == other.gate_index
+            and self.name == other.name
+        )
 
     def __lt__(self, other: "DagNode"):
         """
@@ -106,6 +128,20 @@ class DAGEdge:
         dest (DagNode): The destination node of the edge.
     """
 
+    @classmethod
+    def from_string(cls, edge_str: str) -> "DAGEdge":
+        """
+        Create a DAGEdge from a string representation.
+
+        Args:
+            edge_str (str): The string representation of the edge in the format 'source dest'.
+
+        Returns:
+            DAGEdge: The created DAGEdge instance.
+        """
+        source_str, dest_str = edge_str.split()
+        return cls(DagNode.from_string(source_str), DagNode.from_string(dest_str))
+
     def __init__(self, first: DagNode, second: DagNode):
         """
         Initialize a DAGEdge between two DagNodes.
@@ -124,6 +160,9 @@ class DAGEdge:
             str: The string in the format 'source dest'.
         """
         return f"{self.source} {self.dest}"
+
+    def __eq__(self, other: "DAGEdge"):
+        return self.source == other.source and self.dest == other.dest
 
     def __or__(self, other: "DAGEdge") -> tuple[DagNode, DagNode]:
         """
