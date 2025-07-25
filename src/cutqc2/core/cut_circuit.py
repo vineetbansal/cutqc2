@@ -473,15 +473,26 @@ class CutCircuit:
                         prev_subcircuit_i is not None
                         and prev_subcircuit_i != subcircuit_i
                     ):
-                        # For the existing ("current") subcircuit on this wire,
+                        # For the previous subcircuit on this wire,
                         # add a new qubit wire for this wire index.
                         subcircuit_wire_index = next_subcircuit_wire_index[
                             prev_subcircuit_i
                         ]
+
+                        # Find all used subcircuit qubits in the previous subcircuit.
+                        prev_subcircuit_used_wires = [
+                            j
+                            for wires in subcircuit_map[prev_subcircuit_i].values()
+                            for j in wires
+                        ]
+                        # If the previous subcircuit has used this qubit,
+                        # make room for more.
+                        if subcircuit_wire_index in prev_subcircuit_used_wires:
+                            next_subcircuit_wire_index[prev_subcircuit_i] += 1
+
                         subcircuit_map[prev_subcircuit_i][wire_index].append(
                             subcircuit_wire_index
                         )
-                        next_subcircuit_wire_index[prev_subcircuit_i] += 1
 
                     current_subciruit_on_wire[wire_index] = subcircuit_i
 
