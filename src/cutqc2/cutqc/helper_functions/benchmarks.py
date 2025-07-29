@@ -59,9 +59,9 @@ def construct_qaoa_plus(P, G, params, reg_name, barriers=False, measure=False):
     return circ
 
 
-def construct_random(num_qubits, depth):
+def construct_random(num_qubits, depth, seed=None):
     random_circuit_obj = RandomCircuit(
-        width=num_qubits, depth=depth, connection_degree=0.5, num_hadamards=5, seed=None
+        width=num_qubits, depth=depth, connection_degree=0.5, num_hadamards=5, seed=seed
     )
     circuit, _ = random_circuit_obj.generate()
     return circuit

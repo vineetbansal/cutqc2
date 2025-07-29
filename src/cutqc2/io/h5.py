@@ -1,7 +1,7 @@
 from pathlib import Path
 import h5py
 import numpy as np
-from qiskit.qasm2 import dumps, loads
+from qiskit.qasm3 import dumps, loads
 from cutqc2 import __version__
 from cutqc2.core.cut_circuit import CutCircuit
 from cutqc2.core.dag import DAGEdge
@@ -81,6 +81,11 @@ def cut_circuit_to_h5(
                         key = "_".join(["-".join(k[0]), "-".join(k[1])])
                         group.create_dataset(key, data=np.array(v, dtype="float64"))
 
+                    subcircuit_group.create_dataset("packed_probabilities", data=cut_circuit.get_packed_probabilities(subcircuit_i))
+
+        # overall calculated probabilities - expensive to compute and store.
+        if cut_circuit.probabilities is not None:
+            f.create_dataset("probabilities", data=cut_circuit.probabilities)
 
 def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
     with h5py.File(filepath, "r") as f:
@@ -132,6 +137,14 @@ def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
                         tuple_key = (tuple(str_a.split("-")), tuple(str_b.split("-")))
                         prob_dict[tuple_key] = ds[()].astype(float)
                     entry_probs[subcircuit_i] = prob_dict
+
+                if "packed_probabilities" in subcircuit_group:
+                    packed_probs = subcircuit_group["packed_probabilities"][()]
+                    cut_circuit.subcircuit_packed_probs[subcircuit_i] = packed_probs
+
+        # overall calculated probabilities - expensive to compute and store.
+        if "probabilities" in f:
+            cut_circuit.probabilities = f["probabilities"][()]
 
         if reconstruction_qubit_order:
             cut_circuit.reconstruction_qubit_order = reconstruction_qubit_order

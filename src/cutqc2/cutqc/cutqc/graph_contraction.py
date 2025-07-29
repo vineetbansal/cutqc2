@@ -1,6 +1,10 @@
 import itertools
+import logging
 from functools import reduce
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class GraphContractor(object):
@@ -30,7 +34,8 @@ class GraphContractor(object):
         edges = self.compute_graph.get_edges(from_node=None, to_node=None)
 
         reconstructed_prob = None
-        for edge_bases in itertools.product(["I", "X", "Y", "Z"], repeat=len(edges)):
+        total = 4**len(edges)
+        for j, edge_bases in enumerate(''.join(tup) for tup in itertools.product("IXYZ", repeat=len(edges))):
             self.compute_graph.assign_bases_to_edges(edge_bases=edge_bases, edges=edges)
             summation_term = []
             for subcircuit_idx in self.smart_order:
@@ -41,10 +46,12 @@ class GraphContractor(object):
                     subcircuit_entry_init_meas
                 ]
                 summation_term.append(subcircuit_entry_prob)
+
             if reconstructed_prob is None:
                 reconstructed_prob = reduce(np.kron, summation_term)
             else:
                 reconstructed_prob += reduce(np.kron, summation_term)
+
             self.compute_graph.remove_bases_from_edges(edges=self.compute_graph.edges)
         reconstructed_prob *= 1 / 2**self.num_cuts
         return reconstructed_prob

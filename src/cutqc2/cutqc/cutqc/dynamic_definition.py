@@ -234,9 +234,12 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
                     for subcircuit_qubit_idx, qubit_state in enumerate(
                         subcircuit_state
                     ):
-                        qubit_idx = subcircuit_out_qubits[subcircuit_idx][
-                            subcircuit_qubit_idx
-                        ]
+                        try:
+                            qubit_idx = subcircuit_out_qubits[subcircuit_idx][
+                                subcircuit_qubit_idx
+                            ]
+                        except IndexError:
+                            pass
                         if qubit_state == "active":
                             binary_full_state[qubit_idx] = binary_bin_id[0]
                             binary_bin_id = binary_bin_id[1:]
