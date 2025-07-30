@@ -81,11 +81,15 @@ def cut_circuit_to_h5(
                         key = "_".join(["-".join(k[0]), "-".join(k[1])])
                         group.create_dataset(key, data=np.array(v, dtype="float64"))
 
-                    subcircuit_group.create_dataset("packed_probabilities", data=cut_circuit.get_packed_probabilities(subcircuit_i))
+                    subcircuit_group.create_dataset(
+                        "packed_probabilities",
+                        data=cut_circuit.get_packed_probabilities(subcircuit_i),
+                    )
 
         # overall calculated probabilities - expensive to compute and store.
         if cut_circuit.probabilities is not None:
             f.create_dataset("probabilities", data=cut_circuit.probabilities)
+
 
 def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
     with h5py.File(filepath, "r") as f:
