@@ -16,6 +16,7 @@ jobs:
 
     name: Build and test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    environment: CI
 
     steps:
     - uses: actions/checkout@v4
