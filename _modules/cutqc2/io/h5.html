@@ -36,7 +36,7 @@
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.qasm2</span><span class="w"> </span><span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.qasm3</span><span class="w"> </span><span class="kn">import</span> <span class="n">dumps</span><span class="p">,</span> <span class="n">loads</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.cut_circuit</span><span class="w"> </span><span class="kn">import</span> <span class="n">CutCircuit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.dag</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAGEdge</span>
@@ -116,8 +116,13 @@
                         <span class="n">subcircuit_i</span>
                     <span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                         <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
-                        <span class="n">group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">))</span></div>
+                        <span class="n">group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">))</span>
 
+                    <span class="n">subcircuit_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;packed_probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">get_packed_probabilities</span><span class="p">(</span><span class="n">subcircuit_i</span><span class="p">))</span>
+
+        <span class="c1"># overall calculated probabilities - expensive to compute and store.</span>
+        <span class="k">if</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="h5_to_cut_circuit">
@@ -172,6 +177,14 @@
                         <span class="n">tuple_key</span> <span class="o">=</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">str_a</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">str_b</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)))</span>
                         <span class="n">prob_dict</span><span class="p">[</span><span class="n">tuple_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[()]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
                     <span class="n">entry_probs</span><span class="p">[</span><span class="n">subcircuit_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">prob_dict</span>
+
+                <span class="k">if</span> <span class="s2">&quot;packed_probabilities&quot;</span> <span class="ow">in</span> <span class="n">subcircuit_group</span><span class="p">:</span>
+                    <span class="n">packed_probs</span> <span class="o">=</span> <span class="n">subcircuit_group</span><span class="p">[</span><span class="s2">&quot;packed_probabilities&quot;</span><span class="p">][()]</span>
+                    <span class="n">cut_circuit</span><span class="o">.</span><span class="n">subcircuit_packed_probs</span><span class="p">[</span><span class="n">subcircuit_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">packed_probs</span>
+
+        <span class="c1"># overall calculated probabilities - expensive to compute and store.</span>
+        <span class="k">if</span> <span class="s2">&quot;probabilities&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;probabilities&quot;</span><span class="p">][()]</span>
 
         <span class="k">if</span> <span class="n">reconstruction_qubit_order</span><span class="p">:</span>
             <span class="n">cut_circuit</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span> <span class="o">=</span> <span class="n">reconstruction_qubit_order</span>

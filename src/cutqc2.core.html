@@ -82,6 +82,11 @@
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.compute_probabilities_new">
+<span class="sig-name descname"><span class="pre">compute_probabilities_new</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.compute_probabilities_new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities_new" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.cut">
 <span class="sig-name descname"><span class="pre">cut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_subcircuit_width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_subcircuits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_subcircuit_cuts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuit_size_imbalance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_subcircuits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.cut"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.cut" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -167,6 +172,16 @@ preserve gates that span two wires.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities">
+<span class="sig-name descname"><span class="pre">get_packed_probabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subcircuit_i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_packed_probabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.num_cuts">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_cuts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.num_cuts" title="Link to this definition">¶</a></dt>
@@ -185,7 +200,7 @@ preserve gates that span two wires.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.postprocess">
-<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.postprocess" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">postprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.postprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.postprocess" title="Link to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">array</span></code></span></p>
@@ -215,7 +230,7 @@ preserve gates that span two wires.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.verify">
-<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstructed_probabilities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'statevector_simulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.verify" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstructed_probabilities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'statevector_simulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.verify" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
