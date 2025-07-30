@@ -118,11 +118,15 @@
                         <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
                         <span class="n">group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">))</span>
 
-                    <span class="n">subcircuit_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;packed_probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">get_packed_probabilities</span><span class="p">(</span><span class="n">subcircuit_i</span><span class="p">))</span>
+                    <span class="n">subcircuit_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                        <span class="s2">&quot;packed_probabilities&quot;</span><span class="p">,</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">get_packed_probabilities</span><span class="p">(</span><span class="n">subcircuit_i</span><span class="p">),</span>
+                    <span class="p">)</span>
 
         <span class="c1"># overall calculated probabilities - expensive to compute and store.</span>
         <span class="k">if</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="h5_to_cut_circuit">
