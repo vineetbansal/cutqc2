@@ -2,7 +2,7 @@ name: Test pinned dependencies
 
 on:
   push:
-    branches: [ main, develop, vb/gurobi_lic ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
