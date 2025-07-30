@@ -3,14 +3,10 @@ Tests for end-end verification of large circuits.
 Both correctness and performance can/should be tested here.
 """
 
-import pytest
 from cutqc2.cutqc.helper_functions.benchmarks import construct_random
 from cutqc2.core.cut_circuit import CutCircuit
 
 
-@pytest.mark.skip(
-    reason="Cannot run on Github CI currently - GurobiError: Model too large for size-limited license"
-)
 def test_verify():
     qc = construct_random(num_qubits=16, depth=16, seed=5435)
     cut_circuit = CutCircuit(qc)
