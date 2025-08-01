@@ -1,7 +1,9 @@
 import itertools, copy, pickle, subprocess
+import warnings
 import numpy as np
 
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
+from cutqc2.core.utils import distribute
 
 
 class DynamicDefinition:
@@ -74,9 +76,11 @@ class DynamicDefinition:
                     has_merged_states = True
                     break
             if recursion_layer < self.recursion_depth - 1 and has_merged_states:
+                # Get |recursion_depth| indices with the largest values
                 bin_indices = np.argpartition(
                     reconstructed_prob, -self.recursion_depth
                 )[-self.recursion_depth :]
+
                 for bin_id in bin_indices:
                     if reconstructed_prob[bin_id] > 1 / 2**num_qubits / 10:
                         largest_bins.append(
@@ -157,31 +161,20 @@ class DynamicDefinition:
                 next_dd_schedule["subcircuit_state"][subcircuit_idx]
             ):
                 if qubit_state == "merged" and num_active > 0:
-                    next_dd_schedule["subcircuit_state"][subcircuit_idx][
-                        qubit_ctr
-                    ] = "active"
+                    next_dd_schedule["subcircuit_state"][subcircuit_idx][qubit_ctr] = (
+                        "active"
+                    )
                     num_active -= 1
             assert num_active == 0
         return next_dd_schedule
 
     def distribute_load(self, capacities):
-        if self.mem_limit is None:
-            total_load = sum(capacities.values())
-        else:
-            total_load = min(sum(capacities.values()), self.mem_limit)
-        total_capacity = sum(capacities.values())
-        loads = {subcircuit_idx: 0 for subcircuit_idx in capacities}
-
-        for slot_idx in loads:
-            loads[slot_idx] = int(capacities[slot_idx] / total_capacity * total_load)
-        total_load -= sum(loads.values())
-
-        for slot_idx in loads:
-            while total_load > 0 and loads[slot_idx] < capacities[slot_idx]:
-                loads[slot_idx] += 1
-                total_load -= 1
-        assert total_load == 0
-        return loads
+        specs = {k: 'M'*v for k, v in capacities.items()}
+        result = distribute(
+            specs=specs,
+            capacity=self.mem_limit,
+        )
+        return {k: v.count('A') for k, v in result.items()}
 
     def merge_states_into_bins(self, dd_schedule):
         """
@@ -200,10 +193,42 @@ class DynamicDefinition:
                 merged_subcircuit_entry_probs[subcircuit_idx][
                     subcircuit_entry_init_meas
                 ] = merge_prob_vector(
-                    unmerged_prob_vector=unmerged_prob_vector,
-                    qubit_states=dd_schedule["subcircuit_state"][subcircuit_idx],
+                    unmerged_prob_vector,
+                    dd_schedule["subcircuit_state"][subcircuit_idx],
                 )
         return merged_subcircuit_entry_probs
+
+
+def merge_prob_vector(unmerged_prob_vector, qubit_states):
+    num_active = qubit_states.count("active")
+    if num_active == len(qubit_states):
+        # short-circuit if no merging is needed
+        return np.copy(unmerged_prob_vector)
+
+    num_merged = qubit_states.count("merged")
+    merged_prob_vector = np.zeros(2**num_active, dtype="float32")
+
+    for active_qubit_states in itertools.product(["0", "1"], repeat=num_active):
+        if len(active_qubit_states) > 0:
+            merged_bin_id = int("".join(active_qubit_states), 2)
+        else:
+            merged_bin_id = 0
+        for merged_qubit_states in itertools.product(["0", "1"], repeat=num_merged):
+            active_ptr = 0
+            merged_ptr = 0
+            binary_state_id = ""
+            for qubit_state in qubit_states:
+                if qubit_state == "active":
+                    binary_state_id += active_qubit_states[active_ptr]
+                    active_ptr += 1
+                elif qubit_state == "merged":
+                    binary_state_id += merged_qubit_states[merged_ptr]
+                    merged_ptr += 1
+                else:
+                    binary_state_id += "%s" % qubit_state
+            state_id = int(binary_state_id, 2)
+            merged_prob_vector[merged_bin_id] += unmerged_prob_vector[state_id]
+    return merged_prob_vector
 
 
 def read_dd_bins(subcircuit_out_qubits, dd_bins):
@@ -259,35 +284,3 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
                     full_state_idx = int(full_state, 2)
                     reconstructed_prob[full_state_idx] = average_state_prob
     return reconstructed_prob
-
-
-def merge_prob_vector(unmerged_prob_vector, qubit_states):
-    num_active = qubit_states.count("active")
-    if num_active == len(qubit_states):
-        # short-circuit if no merging is needed
-        return np.copy(unmerged_prob_vector)
-
-    num_merged = qubit_states.count("merged")
-    merged_prob_vector = np.zeros(2**num_active, dtype="float32")
-
-    for active_qubit_states in itertools.product(["0", "1"], repeat=num_active):
-        if len(active_qubit_states) > 0:
-            merged_bin_id = int("".join(active_qubit_states), 2)
-        else:
-            merged_bin_id = 0
-        for merged_qubit_states in itertools.product(["0", "1"], repeat=num_merged):
-            active_ptr = 0
-            merged_ptr = 0
-            binary_state_id = ""
-            for qubit_state in qubit_states:
-                if qubit_state == "active":
-                    binary_state_id += active_qubit_states[active_ptr]
-                    active_ptr += 1
-                elif qubit_state == "merged":
-                    binary_state_id += merged_qubit_states[merged_ptr]
-                    merged_ptr += 1
-                else:
-                    binary_state_id += "%s" % qubit_state
-            state_id = int(binary_state_id, 2)
-            merged_prob_vector[merged_bin_id] += unmerged_prob_vector[state_id]
-    return merged_prob_vector

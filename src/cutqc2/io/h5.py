@@ -90,6 +90,13 @@ def cut_circuit_to_h5(
         if cut_circuit.probabilities is not None:
             f.create_dataset("probabilities", data=cut_circuit.probabilities)
 
+        if cut_circuit.probability_dicts:
+            prob_group = f.create_group("probability_dicts")
+            for key, value in cut_circuit.probability_dicts.items():
+                prob_group.create_dataset(
+                    key, data=np.array(value, dtype="float32")
+                )
+
 
 def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
     with h5py.File(filepath, "r") as f:
@@ -149,6 +156,13 @@ def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:
         # overall calculated probabilities - expensive to compute and store.
         if "probabilities" in f:
             cut_circuit.probabilities = f["probabilities"][()]
+
+        if "probability_dicts" in f:
+            prob_group = f["probability_dicts"]
+            prob_dicts = {}
+            for key, ds in prob_group.items():
+                prob_dicts[key] = ds[()]
+            cut_circuit.probability_dicts = prob_dicts
 
         if reconstruction_qubit_order:
             cut_circuit.reconstruction_qubit_order = reconstruction_qubit_order
