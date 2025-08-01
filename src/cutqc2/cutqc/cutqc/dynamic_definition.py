@@ -1,4 +1,5 @@
 import itertools, copy, pickle, subprocess
+import warnings
 import numpy as np
 
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
@@ -200,8 +201,8 @@ class DynamicDefinition:
                 merged_subcircuit_entry_probs[subcircuit_idx][
                     subcircuit_entry_init_meas
                 ] = merge_prob_vector(
-                    unmerged_prob_vector=unmerged_prob_vector,
-                    qubit_states=dd_schedule["subcircuit_state"][subcircuit_idx],
+                    unmerged_prob_vector,
+                    dd_schedule["subcircuit_state"][subcircuit_idx],
                 )
         return merged_subcircuit_entry_probs
 
@@ -261,33 +262,50 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
     return reconstructed_prob
 
 
-def merge_prob_vector(unmerged_prob_vector, qubit_states):
-    num_active = qubit_states.count("active")
-    if num_active == len(qubit_states):
-        # short-circuit if no merging is needed
+def merge_prob_vector(unmerged_prob_vector: list[float], qubit_mask: int) -> np.ndarray:
+    """
+    Compress quantum probability vector by merging specified qubits.
+
+    Parameters
+    ----------
+    unmerged_prob_vector : numpy.ndarray
+        Original probability vector (2^num_qubits,)
+    qubit_mask : mask specifying which qubits are active (1) and which
+       need to get merged (0).
+
+    Returns
+    -------
+    numpy.ndarray
+        Compressed vector (2^num_active,) preserving active qubit states
+        while summing over merged qubit states.
+    """
+    if not isinstance(qubit_mask, int):
+        warnings.warn("Please pass in qubit_mask as an integer.")
+        qubit_mask = "".join(["1" if x == "active" else "0" for x in qubit_mask])
+        qubit_mask = int(qubit_mask, 2)
+
+    num_qubits = len(unmerged_prob_vector).bit_length() - 1
+    num_active = bin(qubit_mask).count('1')
+    if num_qubits == num_active:
         return np.copy(unmerged_prob_vector)
 
-    num_merged = qubit_states.count("merged")
-    merged_prob_vector = np.zeros(2**num_active, dtype="float32")
+    merged_prob_vector = np.zeros(2 ** num_active, dtype="float32")
 
-    for active_qubit_states in itertools.product(["0", "1"], repeat=num_active):
-        if len(active_qubit_states) > 0:
-            merged_bin_id = int("".join(active_qubit_states), 2)
-        else:
-            merged_bin_id = 0
-        for merged_qubit_states in itertools.product(["0", "1"], repeat=num_merged):
-            active_ptr = 0
-            merged_ptr = 0
-            binary_state_id = ""
-            for qubit_state in qubit_states:
-                if qubit_state == "active":
-                    binary_state_id += active_qubit_states[active_ptr]
-                    active_ptr += 1
-                elif qubit_state == "merged":
-                    binary_state_id += merged_qubit_states[merged_ptr]
-                    merged_ptr += 1
-                else:
-                    binary_state_id += "%s" % qubit_state
-            state_id = int(binary_state_id, 2)
-            merged_prob_vector[merged_bin_id] += unmerged_prob_vector[state_id]
+    # Iterate through all possible states
+    for state in range(len(unmerged_prob_vector)):
+        # Extract active qubit values using bitwise operations
+        active_state = 0
+        active_bit_pos = 0
+
+        for qubit in range(num_qubits):
+            # If qubit is active
+            if (qubit_mask >> qubit) & 1:
+                # and has value 1 in original state
+                if (state >> qubit) & 1:
+                    # Set the corresponding bit in active_state
+                    active_state |= (1 << active_bit_pos)
+                active_bit_pos += 1
+
+        merged_prob_vector[active_state] += unmerged_prob_vector[state]
+
     return merged_prob_vector

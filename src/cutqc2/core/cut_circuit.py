@@ -816,7 +816,7 @@ class CutCircuit:
             }
         else:
             if not hasattr(self, "approximation_bins"):
-                self.compute_probabilities()
+                self.compute_probabilities(mem_limit=8, recursion_depth=4)
 
         reconstructed_prob = read_dd_bins(
             subcircuit_out_qubits=self.reconstruction_qubit_order,
