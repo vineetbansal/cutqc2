@@ -166,23 +166,20 @@ class DynamicDefinition:
         return next_dd_schedule
 
     def distribute_load(self, capacities):
-        if self.mem_limit is None:
-            total_load = sum(capacities.values())
-        else:
-            total_load = min(sum(capacities.values()), self.mem_limit)
-        total_capacity = sum(capacities.values())
-        loads = {subcircuit_idx: 0 for subcircuit_idx in capacities}
+        indices = list(capacities.keys())
+        values = np.array(list(capacities.values()))
 
-        for slot_idx in loads:
-            loads[slot_idx] = int(capacities[slot_idx] / total_capacity * total_load)
-        total_load -= sum(loads.values())
+        total_load = min(np.sum(values),
+                         self.mem_limit) if self.mem_limit else np.sum(values)
+        loads = np.floor(values / np.sum(values) * total_load).astype(int)
 
-        for slot_idx in loads:
-            while total_load > 0 and loads[slot_idx] < capacities[slot_idx]:
-                loads[slot_idx] += 1
-                total_load -= 1
-        assert total_load == 0
-        return loads
+        remainder = int(total_load - np.sum(loads))
+        if remainder > 0:
+            # Add remaining to largest capacities first
+            largest_indices = np.argsort(values)[-remainder:]
+            loads[largest_indices] += 1
+
+        return dict(zip(indices, loads))
 
     def merge_states_into_bins(self, dd_schedule):
         """
