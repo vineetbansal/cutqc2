@@ -107,6 +107,11 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_all_subcircuit_packed_probs">
+<span class="sig-name descname"><span class="pre">get_all_subcircuit_packed_probs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_all_subcircuit_packed_probs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_all_subcircuit_packed_probs" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_counter">
 <span class="sig-name descname"><span class="pre">get_counter</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_counter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_counter" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -174,7 +179,7 @@ preserve gates that span two wires.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities">
-<span class="sig-name descname"><span class="pre">get_packed_probabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subcircuit_i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_packed_probabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get_packed_probabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subcircuit_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qubit_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.get_packed_probabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities" title="Link to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
@@ -412,6 +417,40 @@ Note: <cite>gate_index</cite> assumes that only inter-wire gates are considered.
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+</section>
+<section id="module-cutqc2.core.utils">
+<span id="cutqc2-core-utils-module"></span><h2>cutqc2.core.utils module<a class="headerlink" href="#module-cutqc2.core.utils" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="cutqc2.core.utils.distribute_load">
+<span class="sig-prename descclassname"><span class="pre">cutqc2.core.utils.</span></span><span class="sig-name descname"><span class="pre">distribute_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/utils.html#distribute_load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.utils.distribute_load" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="cutqc2.core.utils.merge_prob_vector">
+<span class="sig-prename descclassname"><span class="pre">cutqc2.core.utils.</span></span><span class="sig-name descname"><span class="pre">merge_prob_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unmerged_prob_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qubit_mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/utils.html#merge_prob_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.utils.merge_prob_vector" title="Link to this definition">¶</a></dt>
+<dd><p>Compress quantum probability vector by merging specified qubits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unmerged_prob_vector</strong> (<em>numpy.ndarray</em>) – Original probability vector (2^num_qubits,)</p></li>
+<li><p><strong>qubit_mask</strong> (<em>mask specifying which qubits are active</em><em> (</em><em>1</em><em>) </em><em>and which</em>) – need to get merged (0).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Compressed vector (2^num_active,) preserving active qubit states
+while summing over merged qubit states.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
