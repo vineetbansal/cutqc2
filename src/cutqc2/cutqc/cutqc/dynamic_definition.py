@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 from cutqc2.cutqc.cutqc.graph_contraction import GraphContractor
+from cutqc2.core.utils import distribute_load, merge_prob_vector
 
 
 class DynamicDefinition:
@@ -75,9 +76,11 @@ class DynamicDefinition:
                     has_merged_states = True
                     break
             if recursion_layer < self.recursion_depth - 1 and has_merged_states:
+                # Get |recursion_depth| indices with the largest values
                 bin_indices = np.argpartition(
                     reconstructed_prob, -self.recursion_depth
                 )[-self.recursion_depth :]
+
                 for bin_id in bin_indices:
                     if reconstructed_prob[bin_id] > 1 / 2**num_qubits / 10:
                         largest_bins.append(
@@ -166,21 +169,10 @@ class DynamicDefinition:
         return next_dd_schedule
 
     def distribute_load(self, capacities):
-        indices = list(capacities.keys())
-        values = np.array(list(capacities.values()))
-
-        total_load = (
-            min(np.sum(values), self.mem_limit) if self.mem_limit else np.sum(values)
+        return distribute_load(
+            load=capacities,
+            capacity=self.mem_limit,
         )
-        loads = np.floor(values / np.sum(values) * total_load).astype(int)
-
-        remainder = int(total_load - np.sum(loads))
-        if remainder > 0:
-            # Add remaining to largest capacities first
-            largest_indices = np.argsort(values)[-remainder:]
-            loads[largest_indices] += 1
-
-        return dict(zip(indices, loads))
 
     def merge_states_into_bins(self, dd_schedule):
         """
@@ -259,51 +251,3 @@ def read_dd_bins(subcircuit_out_qubits, dd_bins):
                     reconstructed_prob[full_state_idx] = average_state_prob
     return reconstructed_prob
 
-
-def merge_prob_vector(unmerged_prob_vector: list[float], qubit_mask: int) -> np.ndarray:
-    """
-    Compress quantum probability vector by merging specified qubits.
-
-    Parameters
-    ----------
-    unmerged_prob_vector : numpy.ndarray
-        Original probability vector (2^num_qubits,)
-    qubit_mask : mask specifying which qubits are active (1) and which
-       need to get merged (0).
-
-    Returns
-    -------
-    numpy.ndarray
-        Compressed vector (2^num_active,) preserving active qubit states
-        while summing over merged qubit states.
-    """
-    if not isinstance(qubit_mask, int):
-        warnings.warn("Please pass in qubit_mask as an integer.")
-        qubit_mask = "".join(["1" if x == "active" else "0" for x in qubit_mask])
-        qubit_mask = int(qubit_mask, 2)
-
-    num_qubits = len(unmerged_prob_vector).bit_length() - 1
-    num_active = bin(qubit_mask).count("1")
-    if num_qubits == num_active:
-        return np.copy(unmerged_prob_vector)
-
-    merged_prob_vector = np.zeros(2**num_active, dtype="float32")
-
-    # Iterate through all possible states
-    for state in range(len(unmerged_prob_vector)):
-        # Extract active qubit values using bitwise operations
-        active_state = 0
-        active_bit_pos = 0
-
-        for qubit in range(num_qubits):
-            # If qubit is active
-            if (qubit_mask >> qubit) & 1:
-                # and has value 1 in original state
-                if (state >> qubit) & 1:
-                    # Set the corresponding bit in active_state
-                    active_state |= 1 << active_bit_pos
-                active_bit_pos += 1
-
-        merged_prob_vector[active_state] += unmerged_prob_vector[state]
-
-    return merged_prob_vector
