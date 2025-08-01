@@ -158,9 +158,9 @@ class DynamicDefinition:
                 next_dd_schedule["subcircuit_state"][subcircuit_idx]
             ):
                 if qubit_state == "merged" and num_active > 0:
-                    next_dd_schedule["subcircuit_state"][subcircuit_idx][
-                        qubit_ctr
-                    ] = "active"
+                    next_dd_schedule["subcircuit_state"][subcircuit_idx][qubit_ctr] = (
+                        "active"
+                    )
                     num_active -= 1
             assert num_active == 0
         return next_dd_schedule
@@ -169,8 +169,9 @@ class DynamicDefinition:
         indices = list(capacities.keys())
         values = np.array(list(capacities.values()))
 
-        total_load = min(np.sum(values),
-                         self.mem_limit) if self.mem_limit else np.sum(values)
+        total_load = (
+            min(np.sum(values), self.mem_limit) if self.mem_limit else np.sum(values)
+        )
         loads = np.floor(values / np.sum(values) * total_load).astype(int)
 
         remainder = int(total_load - np.sum(loads))
@@ -282,11 +283,11 @@ def merge_prob_vector(unmerged_prob_vector: list[float], qubit_mask: int) -> np.
         qubit_mask = int(qubit_mask, 2)
 
     num_qubits = len(unmerged_prob_vector).bit_length() - 1
-    num_active = bin(qubit_mask).count('1')
+    num_active = bin(qubit_mask).count("1")
     if num_qubits == num_active:
         return np.copy(unmerged_prob_vector)
 
-    merged_prob_vector = np.zeros(2 ** num_active, dtype="float32")
+    merged_prob_vector = np.zeros(2**num_active, dtype="float32")
 
     # Iterate through all possible states
     for state in range(len(unmerged_prob_vector)):
@@ -300,7 +301,7 @@ def merge_prob_vector(unmerged_prob_vector: list[float], qubit_mask: int) -> np.
                 # and has value 1 in original state
                 if (state >> qubit) & 1:
                     # Set the corresponding bit in active_state
-                    active_state |= (1 << active_bit_pos)
+                    active_state |= 1 << active_bit_pos
                 active_bit_pos += 1
 
         merged_prob_vector[active_state] += unmerged_prob_vector[state]
