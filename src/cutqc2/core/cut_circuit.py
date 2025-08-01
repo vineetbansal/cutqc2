@@ -15,7 +15,11 @@ from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit import DAGOpNode, DAGCircuit
 
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
-from cutqc2.cutqc.cutqc.dynamic_definition import read_dd_bins, DynamicDefinition
+from cutqc2.cutqc.cutqc.dynamic_definition import (
+    read_dd_bins,
+    DynamicDefinition,
+    merge_prob_vector,
+)
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
@@ -681,7 +685,9 @@ class CutCircuit:
 
         self.approximation_bins = dd.dd_bins
 
-    def get_packed_probabilities(self, subcircuit_i: int) -> np.ndarray:
+    def get_packed_probabilities(
+        self, subcircuit_i: int, qubit_mask: int | None = None
+    ) -> np.ndarray:
         n_prob_vecs: int = sum(
             [subcircuit_i in (e[0], e[1]) for e in self.compute_graph.edges]
         )
@@ -707,8 +713,18 @@ class CutCircuit:
                     if x not in ("zero", "comp")
                 ]
             ) + (Ellipsis,)
-            probs[index] = v
+
+            if qubit_mask is None:
+                probs[index] = v
+            else:
+                probs[index] = merge_prob_vector(v, qubit_mask)
         return probs
+
+    def get_all_subcircuit_packed_probs(self):
+        result = {}
+        for i in range(len(self)):
+            result[i] = self.get_packed_probabilities(i)
+        return result
 
     def compute_probabilities_new(self):
         n_basis: int = 4  # I/X/Y/Z
@@ -749,9 +765,7 @@ class CutCircuit:
         in_to_out_mask = np.argsort(in_to_out_permutation)
 
         # ----- Postprocessing ----- #
-        subcircuit_packed_probs = {
-            j: self.get_packed_probabilities(j) for j in range(n_subcircuits)
-        }
+        subcircuit_packed_probs = self.get_all_subcircuit_packed_probs()
         result = np.zeros(2 ** sum(effective_qubits), dtype=np.float64)
 
         total_initializations = n_basis ** sum(in_degrees)
