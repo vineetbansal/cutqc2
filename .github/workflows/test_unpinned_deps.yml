@@ -16,6 +16,7 @@ jobs:
 
     name: Build and test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    environment: CI
 
     steps:
     - uses: actions/checkout@v4
@@ -41,3 +42,7 @@ jobs:
 
     - name: Pytest
       run: uv run python -m pytest
+      env:
+        GUROBI_WLSACCESSID: ${{ vars.GUROBI_WLSACCESSID }}
+        GUROBI_LICENSEID: ${{ vars.GUROBI_LICENSEID }}
+        GUROBI_WLSSECRET: ${{ secrets.GUROBI_WLSSECRET }}

@@ -1,3 +1,4 @@
+import os
 import math
 from qiskit.dagcircuit.dagcircuit import DAGCircuit
 from qiskit.dagcircuit import DAGOpNode
@@ -43,7 +44,16 @@ class MIP_Model:
         for edge in self.id_to_dag_edge.values():
             self.vertex_weight[str(edge)] = edge.weight()
 
-        self.model = gp.Model(name="cut_searching")
+        if all(env_var in os.environ for env_var in ("GUROBI_WLSACCESSID", "GUROBI_WLSSECRET", "GUROBI_LICENSEID")):
+            env = gp.Env(params = {
+                "WLSACCESSID": os.environ["GUROBI_WLSACCESSID"],
+                "WLSSECRET": os.environ["GUROBI_WLSSECRET"],
+                "LICENSEID": int(os.environ["GUROBI_LICENSEID"]),
+            })
+            self.model = gp.Model(name="cut_searching", env=env)
+        else:
+            self.model = gp.Model(name="cut_searching")
+
         self.model.params.OutputFlag = 0
         self._add_variables()
         self._add_constraints()

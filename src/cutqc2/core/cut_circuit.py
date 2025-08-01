@@ -1,6 +1,7 @@
 from pathlib import Path
 from copy import deepcopy
 import itertools
+import logging
 import numpy as np
 from typing import Self
 from dataclasses import dataclass
@@ -20,6 +21,9 @@ from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
 from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.core.dag import DagNode, DAGEdge
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -76,6 +80,7 @@ class CutCircuit:
 
         self.complete_path_map: dict[Qubit, list[dict]] = {}
         self._reconstruction_qubit_order = None
+        self.probabilities = None
 
     def __str__(self):
         return str(self.unlabeled_circuit.draw(output="text", fold=-1))
@@ -312,6 +317,7 @@ class CutCircuit:
 
         num_qubits = self.circuit.num_qubits
         for num_subcircuit in num_subcircuits:
+            logger.info(f"Trying with {num_subcircuit} subcircuits")
             if (
                 num_subcircuit * max_subcircuit_width - (num_subcircuit - 1)
                 < num_qubits
@@ -337,7 +343,8 @@ class CutCircuit:
             if mip_model.solve():
                 return mip_model.cut_edges_pairs, mip_model.subcircuits
             else:
-                raise RuntimeError("No viable cuts found")
+                continue
+        raise RuntimeError("No viable cuts found")
 
     def add_cut_at_position(self, wire_index: int, gate_index: int):
         cut_qubit = self.circuit.qubits[wire_index]
@@ -649,6 +656,7 @@ class CutCircuit:
     ):
         subcircuits = subcircuits or range(len(self))
         for subcircuit in subcircuits:
+            logger.info(f"Running subcircuit {subcircuit} on backend: {backend}")
             subcircuit_measured_probs = run_subcircuit_instances(
                 subcircuit=self[subcircuit],
                 subcircuit_instance_init_meas=self.subcircuit_instances[subcircuit],
@@ -657,6 +665,9 @@ class CutCircuit:
             self.subcircuit_entry_probs[subcircuit] = attribute_shots(
                 subcircuit_measured_probs=subcircuit_measured_probs,
                 subcircuit_entries=self.subcircuit_entries[subcircuit],
+            )
+            self.subcircuit_packed_probs[subcircuit] = self.get_packed_probabilities(
+                subcircuit
             )
 
     def compute_probabilities(self, mem_limit=None, recursion_depth=1):
@@ -670,9 +681,142 @@ class CutCircuit:
 
         self.approximation_bins = dd.dd_bins
 
-    def postprocess(self) -> np.array:
-        if not hasattr(self, "approximation_bins"):
-            self.compute_probabilities()
+    def get_packed_probabilities(self, subcircuit_i: int) -> np.ndarray:
+        n_prob_vecs: int = sum(
+            [subcircuit_i in (e[0], e[1]) for e in self.compute_graph.edges]
+        )
+        prob_vec_length: int = self.compute_graph.nodes[subcircuit_i]["effective"]
+        probs = np.zeros(((4,) * n_prob_vecs + (2**prob_vec_length,)), dtype="float64")
+
+        for k, v in self.subcircuit_entry_probs[subcircuit_i].items():
+            # we store probabilities as the flat value of init/meas, without the unused locations,
+            # with I=0, X=1, Y=2, Z=3.
+            # So, for example, index (0, 1, 2, 0) might correspond to any of:
+            #    ('zero', 'I', 'X'), ('comp', 'Y', 'comp', 'I')
+            #              0    1              2            0
+            #    ('zero', 'I', 'zero', 'X', 'comp'), ('Y', 'comp', 'I', 'comp')
+            #              0            1              2            0
+            # etc.
+            # The exact form can be determined by the number of in-degrees and out-degrees
+            # of the subcircuit 'node' in the computation graph, as well as the O- and rho- qubits
+            # in the 'edges' of the computation graph.
+            index = tuple(
+                [
+                    "IXYZ".index(x)
+                    for x in list(k[0]) + list(k[1])
+                    if x not in ("zero", "comp")
+                ]
+            ) + (Ellipsis,)
+            probs[index] = v
+        return probs
+
+    def compute_probabilities_new(self):
+        n_basis: int = 4  # I/X/Y/Z
+        n_subcircuits: int = len(self)
+
+        effective_qubits: list[int] = [
+            node["effective"] for node in self.compute_graph.nodes.values()
+        ]
+
+        incoming_to_outgoing_graph = self.compute_graph.incoming_to_outgoing_graph()
+        in_degrees = [
+            len([k for k in incoming_to_outgoing_graph if k[0] == subcircuit])
+            for subcircuit in range(n_subcircuits)
+        ]
+        out_degrees = [
+            len([v for v in incoming_to_outgoing_graph.values() if v[0] == subcircuit])
+            for subcircuit in range(n_subcircuits)
+        ]
+
+        in_starts = np.insert(np.cumsum(in_degrees), 0, 0)
+        out_starts = np.insert(np.cumsum(out_degrees), 0, 0)
+
+        in_to_out_permutation = []
+        out_indices = {}
+        counter = 0
+        for subcircuit in range(n_subcircuits):
+            out_indices[subcircuit] = list(
+                range(counter, counter + out_degrees[subcircuit])
+            )
+            counter += out_degrees[subcircuit]
+
+        for subcircuit in range(n_subcircuits):
+            from_subcircuits = [
+                v for k, v in incoming_to_outgoing_graph.items() if k[0] == subcircuit
+            ]
+            for from_subcircuit, from_qubit in from_subcircuits:
+                in_to_out_permutation.append(out_indices[from_subcircuit][from_qubit])
+        in_to_out_mask = np.argsort(in_to_out_permutation)
+
+        # ----- Postprocessing ----- #
+        subcircuit_packed_probs = {
+            j: self.get_packed_probabilities(j) for j in range(n_subcircuits)
+        }
+        result = np.zeros(2 ** sum(effective_qubits), dtype=np.float64)
+
+        total_initializations = n_basis ** sum(in_degrees)
+        self.smart_order = np.argsort(effective_qubits)
+
+        for j, initializations in enumerate(
+            itertools.product(range(n_basis), repeat=sum(in_degrees))
+        ):
+            # `itertools.product` causes the rightmost element to advance on
+            # every iteration, to maintain lexical ordering. (00, 01, 10 ...)
+            # We wish to 'count up', with the 0th index advancing fastest,
+            # so we reverse the obtained tuple from `itertools.product`.
+            initializations = initializations[::-1]
+
+            if (j + 1) % 10_000 == 0:
+                logger.info(f"{j + 1}/{total_initializations}")
+
+            measurements = np.array(initializations)[in_to_out_mask]
+
+            initialization_probabilities = None
+            for subcircuit in self.smart_order:
+                subcircuit_initializations = tuple(
+                    initializations[in_starts[subcircuit] : in_starts[subcircuit + 1]]
+                )
+                subcircuit_measurements = tuple(
+                    measurements[out_starts[subcircuit] : out_starts[subcircuit + 1]]
+                )
+                subcircuit_index = (
+                    subcircuit_initializations + subcircuit_measurements
+                ) + (Ellipsis,)
+                subcircuit_probabilities = subcircuit_packed_probs[subcircuit][
+                    subcircuit_index
+                ]
+
+                initialization_probabilities = (
+                    np.kron(initialization_probabilities, subcircuit_probabilities)
+                    if initialization_probabilities is not None
+                    else subcircuit_probabilities
+                )
+            result += initialization_probabilities
+
+        result /= 2**self.num_cuts
+        return result
+
+    def postprocess(self, new: bool = True) -> np.array:
+        logger.info("Postprocessing the cut circuit")
+        if new:
+            reconstructed_prob = self.compute_probabilities_new()
+            # Constructing a 'fake' dd_bins structure
+            # for backward compatibility
+            self.approximation_bins = {
+                0: {
+                    "subcircuit_state": {
+                        k: ["active"] * v["effective"]
+                        for k, v in self.compute_graph.nodes.items()
+                    },
+                    "upper_bin": None,
+                    "smart_order": self.smart_order,
+                    "bins": reconstructed_prob,
+                    "expanded_bins": [],
+                }
+            }
+        else:
+            if not hasattr(self, "approximation_bins"):
+                self.compute_probabilities()
 
         reconstructed_prob = read_dd_bins(
             subcircuit_out_qubits=self.reconstruction_qubit_order,
@@ -681,6 +825,7 @@ class CutCircuit:
         reconstructed_prob = quasi_to_real(
             quasiprobability=reconstructed_prob, mode="nearest"
         )
+        self.probabilities = reconstructed_prob
         return reconstructed_prob
 
     def get_ground_truth(self, backend: str) -> np.ndarray:
@@ -691,8 +836,13 @@ class CutCircuit:
         reconstructed_probabilities: np.ndarray | None = None,
         backend: str = "statevector_simulator",
         atol: float = 1e-10,
+        new: bool = True,
     ):
-        reconstructed_probabilities = reconstructed_probabilities or self.postprocess()
+        reconstructed_probabilities = reconstructed_probabilities or (
+            self.probabilities
+            if self.probabilities is not None
+            else self.postprocess(new=new)
+        )
         ground_truth = self.get_ground_truth(backend)
 
         approximation_error = (
@@ -748,7 +898,7 @@ class CutCircuit:
             to_edges = compute_graph.get_edges(from_node=None, to_node=subcircuit_idx)
             subcircuit_edges = from_edges + to_edges
             for subcircuit_edge_bases in itertools.product(
-                ["I", "X", "Y", "Z"], repeat=len(subcircuit_edges)
+                "IXYZ", repeat=len(subcircuit_edges)
             ):
                 subcircuit_entry_init = ["zero"] * bare_subcircuit.num_qubits
                 subcircuit_entry_meas = ["comp"] * bare_subcircuit.num_qubits
@@ -799,6 +949,7 @@ class CutCircuit:
             subcircuit_instances,
         )
         self.subcircuit_entry_probs = {}
+        self.subcircuit_packed_probs = {}
 
     def to_file(self, filepath: str | Path, *args, **kwargs) -> None:
         if isinstance(filepath, str):
