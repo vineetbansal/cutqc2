@@ -51,9 +51,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.dagcircuit</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAGOpNode</span><span class="p">,</span> <span class="n">DAGCircuit</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.evaluator</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_subcircuit_instances</span><span class="p">,</span> <span class="n">attribute_shots</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.dynamic_definition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">DynamicDefinition</span><span class="p">,</span>
-<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.cutqc.compute_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeGraph</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.helper_functions.non_ibmq_functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_circ</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.helper_functions.conversions</span><span class="w"> </span><span class="kn">import</span> <span class="n">quasi_to_real</span>
@@ -780,20 +777,6 @@
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.compute_probabilities">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mem_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recursion_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="n">dd</span> <span class="o">=</span> <span class="n">DynamicDefinition</span><span class="p">(</span>
-            <span class="n">compute_graph</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="p">,</span>
-            <span class="n">num_cuts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_cuts</span><span class="p">,</span>
-            <span class="n">subcircuit_entry_probs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span><span class="p">,</span>
-            <span class="n">mem_limit</span><span class="o">=</span><span class="n">mem_limit</span><span class="p">,</span>
-            <span class="n">recursion_depth</span><span class="o">=</span><span class="n">recursion_depth</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">dd_bins</span></div>
-
-
 <div class="viewcode-block" id="CutCircuit.get_packed_probabilities">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_packed_probabilities</span><span class="p">(</span>
@@ -873,11 +856,9 @@
         <span class="k">return</span> <span class="n">effective_qubits_dict</span><span class="p">,</span> <span class="n">active_qubits</span></div>
 
 
-<div class="viewcode-block" id="CutCircuit.compute_probabilities_new">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities_new">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities_new</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+<div class="viewcode-block" id="CutCircuit.compute_probabilities">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
         <span class="n">n_basis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># I/X/Y/Z</span>
         <span class="n">n_subcircuits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
@@ -981,7 +962,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recursion depth </span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">recursion_depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;qubit spec: </span><span class="si">{</span><span class="n">qubit_spec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-            <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities_new</span><span class="p">(</span><span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_spec</span><span class="p">)</span>
+            <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities</span><span class="p">(</span><span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_spec</span><span class="p">)</span>
             <span class="n">probabilities</span> <span class="o">=</span> <span class="n">unmerge_prob_vector</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_spec</span><span class="p">)</span>
 
             <span class="n">perm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_flat_qubit_order</span><span class="p">()</span>
