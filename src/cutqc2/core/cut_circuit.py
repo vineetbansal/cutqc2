@@ -16,9 +16,6 @@ from qiskit.converters import circuit_to_dag
 from qiskit.dagcircuit import DAGOpNode, DAGCircuit
 
 from cutqc2.cutqc.cutqc.evaluator import run_subcircuit_instances, attribute_shots
-from cutqc2.cutqc.cutqc.dynamic_definition import (
-    DynamicDefinition,
-)
 from cutqc2.cutqc.cutqc.compute_graph import ComputeGraph
 from cutqc2.cutqc.helper_functions.non_ibmq_functions import evaluate_circ
 from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
@@ -689,17 +686,6 @@ class CutCircuit:
                 subcircuit
             )
 
-    def compute_probabilities(self, mem_limit=None, recursion_depth=1):
-        dd = DynamicDefinition(
-            compute_graph=self.compute_graph,
-            num_cuts=self.num_cuts,
-            subcircuit_entry_probs=self.subcircuit_entry_probs,
-            mem_limit=mem_limit,
-            recursion_depth=recursion_depth,
-        )
-
-        self.approximation_bins = dd.dd_bins
-
     def get_packed_probabilities(
         self, subcircuit_i: int, qubit_spec: str | None = None
     ) -> np.ndarray:
@@ -770,9 +756,7 @@ class CutCircuit:
             effective_qubits_dict[j] = qubit_spec[start:end]
         return effective_qubits_dict, active_qubits
 
-    def compute_probabilities_new(
-        self, qubit_spec: str | None = None, max_workers: int = -1
-    ) -> np.array:
+    def compute_probabilities(self, qubit_spec: str | None = None) -> np.array:
         n_basis: int = 4  # I/X/Y/Z
         n_subcircuits: int = len(self)
 
@@ -873,7 +857,7 @@ class CutCircuit:
             logger.info(f"Recursion depth {j + 1}/{recursion_depth}")
             logger.info(f"qubit spec: {qubit_spec}")
 
-            probabilities = self.compute_probabilities_new(qubit_spec=qubit_spec)
+            probabilities = self.compute_probabilities(qubit_spec=qubit_spec)
             probabilities = unmerge_prob_vector(probabilities, qubit_spec=qubit_spec)
 
             perm = self.reconstruction_flat_qubit_order()
