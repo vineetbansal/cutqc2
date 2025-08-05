@@ -93,9 +93,7 @@ def cut_circuit_to_h5(
         if cut_circuit.probability_dicts:
             prob_group = f.create_group("probability_dicts")
             for key, value in cut_circuit.probability_dicts.items():
-                prob_group.create_dataset(
-                    key, data=np.array(value, dtype="float32")
-                )
+                prob_group.create_dataset(key, data=np.array(value, dtype="float32"))
 
 
 def h5_to_cut_circuit(filepath: str | Path, *args, **kwargs) -> CutCircuit:

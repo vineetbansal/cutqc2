@@ -37,14 +37,14 @@ def test_distribute3():
 
 def test_distribute4():
     def get_prob(qubit_spec: str):
-        n_qubits = qubit_spec.count('A')
-        result = np.random.random(2 ** n_qubits)
+        n_qubits = qubit_spec.count("A")
+        result = np.random.random(2**n_qubits)
         result /= np.sum(result)
 
         largest_bin = np.argmax(result)
         largest_bin_str = f"{largest_bin:010b}"
         for j in range(n_qubits):
-            qubit_spec = qubit_spec.replace('A', largest_bin_str[j], 1)
+            qubit_spec = qubit_spec.replace("A", largest_bin_str[j], 1)
 
         return result, qubit_spec
 
