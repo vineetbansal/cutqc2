@@ -1,13 +1,12 @@
 import numpy as np
 
 
-def permute_bits(n, permutation):
+def permute_bits(n: int, permutation: list[int]) -> int:
     n_bits = len(permutation)
     binary_n = f"{n:0{n_bits}b}"
     # Get bit i from position permutation[i]
     binary_n_permuted = "".join(binary_n[permutation[i]] for i in range(n_bits))
-    # return int(binary_n_permuted, 2)
-    return binary_n_permuted
+    return int(binary_n_permuted, 2)
 
 
 def distribute(

@@ -848,7 +848,8 @@ class CutCircuit:
         logger.info("Postprocessing the cut circuit")
         if capacity is None:
             capacity = self.compute_graph.effective_qubits
-        capacity = min(capacity, self.compute_graph.effective_qubits)
+        else:
+            capacity = min(capacity, self.compute_graph.effective_qubits)
 
         qubit_spec = ("A" * capacity) + (
             "M" * (self.compute_graph.effective_qubits - capacity)
@@ -863,7 +864,7 @@ class CutCircuit:
             perm = self.reconstruction_flat_qubit_order()
             reconstructed_probabilities = np.zeros_like(probabilities)
             for j, _prob in enumerate(probabilities):
-                reconstructed_probabilities[int(permute_bits(j, perm), 2)] = _prob
+                reconstructed_probabilities[permute_bits(j, perm)] = _prob
 
             reconstructed_probabilities = quasi_to_real(
                 quasiprobability=reconstructed_probabilities, mode="nearest"
