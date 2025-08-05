@@ -125,7 +125,14 @@
 
         <span class="c1"># overall calculated probabilities - expensive to compute and store.</span>
         <span class="k">if</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span><span class="p">)</span></div>
+            <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;probabilities&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probability_dicts</span><span class="p">:</span>
+            <span class="n">prob_group</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;probability_dicts&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probability_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">prob_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                    <span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+                <span class="p">)</span></div>
 
 
 
@@ -189,6 +196,13 @@
         <span class="c1"># overall calculated probabilities - expensive to compute and store.</span>
         <span class="k">if</span> <span class="s2">&quot;probabilities&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;probabilities&quot;</span><span class="p">][()]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;probability_dicts&quot;</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">prob_group</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;probability_dicts&quot;</span><span class="p">]</span>
+            <span class="n">prob_dicts</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">prob_group</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">prob_dicts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[()]</span>
+            <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probability_dicts</span> <span class="o">=</span> <span class="n">prob_dicts</span>
 
         <span class="k">if</span> <span class="n">reconstruction_qubit_order</span><span class="p">:</span>
             <span class="n">cut_circuit</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span> <span class="o">=</span> <span class="n">reconstruction_qubit_order</span>

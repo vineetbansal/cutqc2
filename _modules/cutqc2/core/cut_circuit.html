@@ -34,6 +34,7 @@
             
   <h1>Source code for cutqc2.core.cut_circuit</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">os</span><span class="w"> </span><span class="kn">import</span> <span class="n">cpu_count</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -41,6 +42,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantumCircuit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.circuit.operation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Operation</span>
@@ -60,6 +62,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.helper_functions.conversions</span><span class="w"> </span><span class="kn">import</span> <span class="n">quasi_to_real</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.cutqc.helper_functions.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.dag</span><span class="w"> </span><span class="kn">import</span> <span class="n">DagNode</span><span class="p">,</span> <span class="n">DAGEdge</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">distribute2</span><span class="p">,</span> <span class="n">merge_prob_vector</span> <span class="k">as</span> <span class="n">merge_prob_vector_new</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -131,6 +134,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">complete_path_map</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Qubit</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruction_qubit_order</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probability_dicts</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">fold</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
@@ -779,13 +783,13 @@
 <div class="viewcode-block" id="CutCircuit.get_packed_probabilities">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_packed_probabilities">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_packed_probabilities</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">subcircuit_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">qubit_mask</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">subcircuit_i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">n_prob_vecs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
             <span class="p">[</span><span class="n">subcircuit_i</span> <span class="ow">in</span> <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">prob_vec_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">subcircuit_i</span><span class="p">][</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span>
-        <span class="n">probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(((</span><span class="mi">4</span><span class="p">,)</span> <span class="o">*</span> <span class="n">n_prob_vecs</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">prob_vec_length</span><span class="p">,)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float64&quot;</span><span class="p">)</span>
+        <span class="n">prob_vec_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">qubit_spec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">subcircuit_i</span><span class="p">][</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(((</span><span class="mi">4</span><span class="p">,)</span> <span class="o">*</span> <span class="n">n_prob_vecs</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">prob_vec_length</span><span class="p">,)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subcircuit_entry_probs</span><span class="p">[</span><span class="n">subcircuit_i</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># we store probabilities as the flat value of init/meas, without the unused locations,</span>
@@ -807,31 +811,47 @@
                 <span class="p">]</span>
             <span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,)</span>
 
-            <span class="k">if</span> <span class="n">qubit_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">qubit_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">probs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">probs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">merge_prob_vector</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">qubit_mask</span><span class="p">)</span>
+                <span class="n">probs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">merge_prob_vector_new</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">probs</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.get_all_subcircuit_packed_probs">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.get_all_subcircuit_packed_probs">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_subcircuit_packed_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_subcircuit_packed_probs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubit_specs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
-            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_packed_probabilities</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_packed_probabilities</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_specs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">qubit_specs</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.compute_probabilities_new">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities_new">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities_new</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities_new</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
         <span class="n">n_basis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># I/X/Y/Z</span>
         <span class="n">n_subcircuits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-        <span class="n">effective_qubits</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">node</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+        <span class="n">effective_qubits</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">:</span>
+            <span class="n">effective_qubits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">][</span><span class="s2">&quot;effective&quot;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">qubit_spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">active_qubits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">effective_qubits</span><span class="p">)</span>
+            <span class="n">qubit_spec</span> <span class="o">=</span> <span class="s1">&#39;A&#39;</span> <span class="o">*</span> <span class="n">active_qubits</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">active_qubits</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">)</span>
+
+        <span class="n">starts</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">length</span> <span class="ow">in</span> <span class="n">effective_qubits</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">starts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">starts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">length</span><span class="p">)</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span> <span class="o">+</span> <span class="n">length</span> <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">length</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">effective_qubits</span><span class="p">)]</span>
+
+        <span class="n">effective_qubits_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">):</span>
+            <span class="n">effective_qubits_dict</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
 
         <span class="n">incoming_to_outgoing_graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">incoming_to_outgoing_graph</span><span class="p">()</span>
         <span class="n">in_degrees</span> <span class="o">=</span> <span class="p">[</span>
@@ -864,43 +884,44 @@
         <span class="n">in_to_out_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">in_to_out_permutation</span><span class="p">)</span>
 
         <span class="c1"># ----- Postprocessing ----- #</span>
-        <span class="n">subcircuit_packed_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_subcircuit_packed_probs</span><span class="p">()</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="nb">sum</span><span class="p">(</span><span class="n">effective_qubits</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 
+        <span class="n">subcircuit_packed_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_subcircuit_packed_probs</span><span class="p">(</span><span class="n">qubit_specs</span><span class="o">=</span><span class="n">effective_qubits_dict</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">active_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="n">total_initializations</span> <span class="o">=</span> <span class="n">n_basis</span> <span class="o">**</span> <span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">effective_qubits</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">initializations</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
             <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_basis</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">))</span>
         <span class="p">):</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10_000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_initializations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
             <span class="c1"># `itertools.product` causes the rightmost element to advance on</span>
             <span class="c1"># every iteration, to maintain lexical ordering. (00, 01, 10 ...)</span>
             <span class="c1"># We wish to &#39;count up&#39;, with the 0th index advancing fastest,</span>
             <span class="c1"># so we reverse the obtained tuple from `itertools.product`.</span>
             <span class="n">initializations</span> <span class="o">=</span> <span class="n">initializations</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-            <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10_000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_initializations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
             <span class="n">measurements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">initializations</span><span class="p">)[</span><span class="n">in_to_out_mask</span><span class="p">]</span>
 
             <span class="n">initialization_probabilities</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">:</span>
                 <span class="n">subcircuit_initializations</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">initializations</span><span class="p">[</span><span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="n">initializations</span><span class="p">[</span>
+                    <span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]:</span> <span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
                 <span class="p">)</span>
                 <span class="n">subcircuit_measurements</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">measurements</span><span class="p">[</span><span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="n">measurements</span><span class="p">[</span>
+                    <span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]:</span> <span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
                 <span class="p">)</span>
-                <span class="n">subcircuit_index</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">subcircuit_initializations</span> <span class="o">+</span> <span class="n">subcircuit_measurements</span>
-                <span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,)</span>
+                <span class="n">subcircuit_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">subcircuit_initializations</span> <span class="o">+</span> <span class="n">subcircuit_measurements</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,)</span>
                 <span class="n">subcircuit_probabilities</span> <span class="o">=</span> <span class="n">subcircuit_packed_probs</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">][</span>
                     <span class="n">subcircuit_index</span>
                 <span class="p">]</span>
 
                 <span class="n">initialization_probabilities</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">initialization_probabilities</span><span class="p">,</span> <span class="n">subcircuit_probabilities</span><span class="p">)</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">initialization_probabilities</span><span class="p">,</span>
+                            <span class="n">subcircuit_probabilities</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">initialization_probabilities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                     <span class="k">else</span> <span class="n">subcircuit_probabilities</span>
                 <span class="p">)</span>
@@ -910,39 +931,65 @@
         <span class="k">return</span> <span class="n">result</span></div>
 
 
+
 <div class="viewcode-block" id="CutCircuit.postprocess">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.postprocess">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">recursion_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Postprocessing the cut circuit&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">new</span><span class="p">:</span>
-            <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities_new</span><span class="p">()</span>
-            <span class="c1"># Constructing a &#39;fake&#39; dd_bins structure</span>
-            <span class="c1"># for backward compatibility</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="mi">0</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s2">&quot;subcircuit_state&quot;</span><span class="p">:</span> <span class="p">{</span>
-                        <span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;active&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                    <span class="p">},</span>
-                    <span class="s2">&quot;upper_bin&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="s2">&quot;smart_order&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">,</span>
-                    <span class="s2">&quot;bins&quot;</span><span class="p">:</span> <span class="n">reconstructed_prob</span><span class="p">,</span>
-                    <span class="s2">&quot;expanded_bins&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">capacity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span>
+
+            <span class="n">capacity</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span><span class="p">)</span>
+            <span class="n">qubit_spec</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;A&#39;</span> <span class="o">*</span> <span class="n">capacity</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;M&#39;</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span> <span class="o">-</span> <span class="n">capacity</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">recursion_depth</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Recursion depth </span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">recursion_depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;qubit spec: </span><span class="si">{</span><span class="n">qubit_spec</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities_new</span><span class="p">(</span><span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_spec</span><span class="p">)</span>
+
+                <span class="c1"># Constructing a &#39;fake&#39; dd_bins structure</span>
+                <span class="c1"># for backward compatibility</span>
+                <span class="n">approximation_bins</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="mi">0</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;subcircuit_state&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;active&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">v</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                        <span class="p">},</span>
+                        <span class="s2">&quot;upper_bin&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;smart_order&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">,</span>
+                        <span class="s2">&quot;bins&quot;</span><span class="p">:</span> <span class="n">probabilities</span><span class="p">,</span>
+                        <span class="s2">&quot;expanded_bins&quot;</span><span class="p">:</span> <span class="p">[],</span>
+                    <span class="p">}</span>
                 <span class="p">}</span>
-            <span class="p">}</span>
+                <span class="n">probabilities</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
+                    <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span><span class="p">,</span>
+                    <span class="n">dd_bins</span><span class="o">=</span><span class="n">approximation_bins</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="n">probabilities</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span><span class="n">quasiprobability</span><span class="o">=</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">probability_dicts</span><span class="p">[</span><span class="n">qubit_spec</span><span class="p">]</span> <span class="o">=</span> <span class="n">probabilities</span>
+
+                <span class="n">new_qubit_spec</span> <span class="o">=</span> <span class="n">distribute2</span><span class="p">(</span><span class="n">qubit_spec</span><span class="o">=</span><span class="n">qubit_spec</span><span class="p">,</span> <span class="n">probabilities</span><span class="o">=</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">new_qubit_spec</span> <span class="o">==</span> <span class="n">qubit_spec</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No more capacity to distribute, stopping recursion&quot;</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="n">qubit_spec</span> <span class="o">=</span> <span class="n">new_qubit_spec</span>
+
+            <span class="k">return</span> <span class="n">probabilities</span>
+
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;approximation_bins&quot;</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">compute_probabilities</span><span class="p">(</span><span class="n">mem_limit</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">recursion_depth</span><span class="o">=</span><span class="n">recursion_depth</span><span class="p">)</span>
 
-        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
-            <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span><span class="p">,</span>
-            <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
-            <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">reconstructed_prob</span>
-        <span class="k">return</span> <span class="n">reconstructed_prob</span></div>
+            <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">read_dd_bins</span><span class="p">(</span>
+                <span class="n">subcircuit_out_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span><span class="p">,</span>
+                <span class="n">dd_bins</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">approximation_bins</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">reconstructed_prob</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
+                <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_prob</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">reconstructed_prob</span>
+            <span class="k">return</span> <span class="n">reconstructed_prob</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.get_ground_truth">
@@ -958,7 +1005,7 @@
         <span class="n">reconstructed_probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;statevector_simulator&quot;</span><span class="p">,</span>
         <span class="n">atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
-        <span class="n">new</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">new</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">reconstructed_probabilities</span> <span class="ow">or</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span>
@@ -1092,6 +1139,19 @@
         <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">cut_circuit_to_h5</span><span class="p">}</span>
         <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="n">supported_formats</span><span class="p">,</span> <span class="s2">&quot;Unsupported format&quot;</span>
         <span class="k">return</span> <span class="n">supported_formats</span><span class="p">[</span><span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span><span class="p">](</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="CutCircuit.plot">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.plot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ground_truth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ground_truth</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;statevector_simulator&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">)),</span> <span class="n">ground_truth</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">probability_dicts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># y = np.cumsum(v)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)),</span> <span class="n">v</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
 </div>
 
 </pre></div>
