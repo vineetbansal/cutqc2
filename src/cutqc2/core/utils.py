@@ -9,75 +9,25 @@ def permute_bits(n: int, permutation: list[int]) -> int:
     return int(binary_n_permuted, 2)
 
 
-def distribute(
-    specs: dict[int, str], capacity: int | None = None, zoom: int | None = None
-) -> dict[int, str]:
-    """
-    Distribute (or redistribute) loads to fit within a specified total capacity.
-    Parameters
-    ----------
-    specs: Dictionary from id to load spec (string of A/M/0/1).
-        - "A": qubit is preserved in output
-        - "M": qubit is summed over
-        - "0"/"1": qubit is fixed to that value
-    capacity: Total capacity to distribute loads across.
-    zoom: Optional id to zoom into
+def distribute(n_qubits: int, probabilities: dict[str, np.array], capacity: int) -> str:
+    largest_bin_value = 0
+    largest_bin_index = 0
+    largest_bin_qubit_spec = ""
+    for _qubit_spec, prob in probabilities.items():
+        largest_bin_value_candidate = np.max(prob)
+        if largest_bin_value_candidate > largest_bin_value:
+            largest_bin_value = largest_bin_value_candidate
+            largest_bin_index = np.argmax(prob)
+            largest_bin_qubit_spec = _qubit_spec
 
-    Returns
-    -------
-    Dictionary mapping id to new load spec
-    New load spec distributes the available capacity to each id's 'M' qubits
-    by changing a subset of them to 'A'.
-    """
-    indices = list(specs.keys())
-    if zoom is None:
-        loads = np.array([v.count("M") for v in specs.values()])
-    else:
-        loads = np.array(
-            [
-                specs[zoom].count("M") + specs[zoom].count("A") if k == zoom else 0
-                for k in indices
-            ]
+    largest_bin_str = f"{largest_bin_index:0{n_qubits}b}"
+    for j in range(n_qubits):
+        largest_bin_qubit_spec = largest_bin_qubit_spec.replace(
+            "A", largest_bin_str[j], 1
         )
+    # qubit_spec = qubit_spec.replace("M", "A", capacity)
 
-    total_load = np.sum(loads)
-    if total_load == 0:
-        return specs
-    if capacity is None:
-        capacity = total_load
-    new_loads = np.floor(loads / total_load * capacity).astype(int)
-
-    remainder = int(capacity - np.sum(new_loads))
-    if remainder > 0:
-        # Add remaining to largest capacities first
-        largest_indices = np.argsort(loads)[-remainder:]
-        new_loads[largest_indices] += 1
-
-    new_specs = []
-    for k, spec in specs.items():
-        new_load = new_loads[k]
-        new_spec = spec.replace("A", "M")  # change all active to merged
-        new_spec = new_spec.replace(
-            "M", "A", new_load
-        )  # change first |new_load| merged to active
-        new_specs.append(new_spec)
-
-    result = {}
-    for index, new_load, new_spec in zip(indices, new_loads, new_specs):
-        result[index] = new_spec
-    return result
-
-
-def distribute2(qubit_spec: str, probabilities: np.array, capacity: int) -> str:
-    if "M" in qubit_spec:
-        n_qubits = qubit_spec.count("A")
-        largest_bin = np.argmax(probabilities)
-        largest_bin_str = f"{largest_bin:0{n_qubits}b}"
-        for j in range(n_qubits):
-            qubit_spec = qubit_spec.replace("A", largest_bin_str[j], 1)
-        qubit_spec = qubit_spec.replace("M", "A", capacity)
-
-    return qubit_spec
+    return largest_bin_qubit_spec
 
 
 def merge_prob_vector(unmerged_prob_vector: np.ndarray, qubit_spec: str) -> np.ndarray:

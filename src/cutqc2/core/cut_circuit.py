@@ -22,11 +22,10 @@ from cutqc2.cutqc.helper_functions.conversions import quasi_to_real
 from cutqc2.cutqc.helper_functions.metrics import MSE
 from cutqc2.core.dag import DagNode, DAGEdge
 from cutqc2.core.utils import (
-    distribute2,
     merge_prob_vector,
-    unmerge_prob_vector,
     permute_bits,
 )
+from cutqc2.core.dynamic_definition import DynamicDefinition
 
 
 logger = logging.getLogger(__name__)
@@ -86,8 +85,9 @@ class CutCircuit:
 
         self.complete_path_map: dict[Qubit, list[dict]] = {}
         self._reconstruction_qubit_order = None
-        self.probabilities = None
-        self.probability_dicts = {}
+
+        self.dynamic_definition: DynamicDefinition | None = None
+        self.probabilities: np.ndarray | None = None
 
     def __str__(self):
         return str(self.unlabeled_circuit.draw(output="text", fold=-1))
@@ -844,43 +844,33 @@ class CutCircuit:
         result /= 2**self.num_cuts
         return result
 
-    def postprocess(self, capacity: int | None = None, recursion_depth: int = 1):
+    def postprocess(
+        self, capacity: int | None = None, max_recursion: int = 1
+    ) -> np.ndarray:
         logger.info("Postprocessing the cut circuit")
         if capacity is None:
             capacity = self.compute_graph.effective_qubits
         else:
             capacity = min(capacity, self.compute_graph.effective_qubits)
 
-        qubit_spec = ("A" * capacity) + (
-            "M" * (self.compute_graph.effective_qubits - capacity)
+        self.dynamic_definition = DynamicDefinition(
+            num_qubits=self.compute_graph.effective_qubits,
+            capacity=capacity,
+            prob_fn=self.compute_probabilities,
         )
-        for j in range(recursion_depth):
-            logger.info(f"Recursion depth {j + 1}/{recursion_depth}")
-            logger.info(f"qubit spec: {qubit_spec}")
+        unmerged_probabilities = self.dynamic_definition.run(
+            max_recursion=max_recursion
+        )
 
-            probabilities = self.compute_probabilities(qubit_spec=qubit_spec)
-            probabilities = unmerge_prob_vector(probabilities, qubit_spec=qubit_spec)
+        perm = self.reconstruction_flat_qubit_order()
+        reconstructed_probabilities = np.zeros_like(unmerged_probabilities)
+        for j, _prob in enumerate(unmerged_probabilities):
+            reconstructed_probabilities[permute_bits(j, perm)] = _prob
 
-            perm = self.reconstruction_flat_qubit_order()
-            reconstructed_probabilities = np.zeros_like(probabilities)
-            for j, _prob in enumerate(probabilities):
-                reconstructed_probabilities[permute_bits(j, perm)] = _prob
-
-            reconstructed_probabilities = quasi_to_real(
-                quasiprobability=reconstructed_probabilities, mode="nearest"
-            )
-            self.probability_dicts[qubit_spec] = reconstructed_probabilities
-
-            new_qubit_spec = distribute2(
-                qubit_spec=qubit_spec,
-                probabilities=reconstructed_probabilities,
-                capacity=capacity,
-            )
-            if new_qubit_spec == qubit_spec:
-                logger.info("No more capacity to distribute, stopping recursion")
-                break
-            qubit_spec = new_qubit_spec
-
+        reconstructed_probabilities = quasi_to_real(
+            quasiprobability=reconstructed_probabilities, mode="nearest"
+        )
+        self.probabilities = reconstructed_probabilities
         return reconstructed_probabilities
 
     def get_ground_truth(self, backend: str) -> np.ndarray:
@@ -888,24 +878,30 @@ class CutCircuit:
 
     def verify(
         self,
-        reconstructed_probabilities: np.ndarray | None = None,
+        probabilities: np.ndarray | None = None,
+        capacity: int | None = None,
+        max_recursion: int = 1,
         backend: str = "statevector_simulator",
         atol: float = 1e-10,
-    ):
-        reconstructed_probabilities = reconstructed_probabilities or (
-            self.probabilities if self.probabilities is not None else self.postprocess()
-        )
+        raise_error: bool = True,
+    ) -> float:
+        if probabilities is None:
+            probabilities = self.postprocess(
+                capacity=capacity, max_recursion=max_recursion
+            )
         ground_truth = self.get_ground_truth(backend)
 
         approximation_error = (
-            MSE(target=ground_truth, obs=reconstructed_probabilities)
+            MSE(target=ground_truth, obs=probabilities)
             * 2**self.circuit.num_qubits
             / np.linalg.norm(ground_truth) ** 2
         )
 
-        assert approximation_error < atol, (
-            "Difference in cut circuit and uncut circuit is outside of floating point error tolerance"
-        )
+        if approximation_error > atol and raise_error:
+            raise RuntimeError(
+                "Difference in cut circuit and uncut circuit is outside of floating point error tolerance"
+            )
+        return approximation_error
 
     def populate_compute_graph(self):
         """
@@ -1014,18 +1010,17 @@ class CutCircuit:
         assert filepath.suffix in supported_formats, "Unsupported format"
         return supported_formats[filepath.suffix](self, filepath, *args, **kwargs)
 
-    def plot(self):
-        ground_truth = self.get_ground_truth(backend="statevector_simulator")
-        n = len(self.probability_dicts)
-        fig, axes = plt.subplots(n, figsize=(4, 3 * n))
-        if n == 1:
-            axes = [axes]
+    def plot(self, plot_ground_truth: bool = True) -> None:
+        fig, ax = plt.subplots()
+        if plot_ground_truth:
+            ground_truth = self.get_ground_truth(backend="statevector_simulator")
+            ax.plot(range(len(ground_truth)), ground_truth, linestyle="--", color="r")
 
-        for j, (k, v) in enumerate(self.probability_dicts.items()):
-            axes[j].plot(
-                range(len(ground_truth)), ground_truth, linestyle="--", color="r"
-            )
-            axes[j].bar(range(len(v)), v)
-            axes[j].set_title(f"{k}")
+        probabilities = self.probabilities
+        ax.bar(np.arange(len(probabilities)), probabilities)
+        ax.set_title(
+            f"Capacity {self.dynamic_definition.capacity}, Recursion {self.dynamic_definition.recursion_level}"
+        )
+
         plt.tight_layout()
         plt.show()
