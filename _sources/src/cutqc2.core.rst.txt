@@ -20,6 +20,14 @@ cutqc2.core.dag module
    :undoc-members:
    :show-inheritance:
 
+cutqc2.core.dynamic\_definition module
+--------------------------------------
+
+.. automodule:: cutqc2.core.dynamic_definition
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cutqc2.core.utils module
 ------------------------
 

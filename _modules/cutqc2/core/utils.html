@@ -38,90 +38,36 @@
 
 <div class="viewcode-block" id="permute_bits">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.utils.permute_bits">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">permute_bits</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">permutation</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permute_bits</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">permutation</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="n">n_bits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">permutation</span><span class="p">)</span>
     <span class="n">binary_n</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">n_bits</span><span class="si">}</span><span class="s2">b</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="c1"># Get bit i from position permutation[i]</span>
     <span class="n">binary_n_permuted</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">binary_n</span><span class="p">[</span><span class="n">permutation</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bits</span><span class="p">))</span>
-    <span class="c1"># return int(binary_n_permuted, 2)</span>
-    <span class="k">return</span> <span class="n">binary_n_permuted</span></div>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">binary_n_permuted</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
 
 
 
 <div class="viewcode-block" id="distribute">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.utils.distribute">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">distribute</span><span class="p">(</span>
-    <span class="n">specs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">zoom</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Distribute (or redistribute) loads to fit within a specified total capacity.</span>
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    specs: Dictionary from id to load spec (string of A/M/0/1).</span>
-<span class="sd">        - &quot;A&quot;: qubit is preserved in output</span>
-<span class="sd">        - &quot;M&quot;: qubit is summed over</span>
-<span class="sd">        - &quot;0&quot;/&quot;1&quot;: qubit is fixed to that value</span>
-<span class="sd">    capacity: Total capacity to distribute loads across.</span>
-<span class="sd">    zoom: Optional id to zoom into</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">distribute</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">probabilities</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">],</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">largest_bin_value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">largest_bin_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">largest_bin_qubit_spec</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">_qubit_spec</span><span class="p">,</span> <span class="n">prob</span> <span class="ow">in</span> <span class="n">probabilities</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">largest_bin_value_candidate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest_bin_value_candidate</span> <span class="o">&gt;</span> <span class="n">largest_bin_value</span><span class="p">:</span>
+            <span class="n">largest_bin_value</span> <span class="o">=</span> <span class="n">largest_bin_value_candidate</span>
+            <span class="n">largest_bin_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+            <span class="n">largest_bin_qubit_spec</span> <span class="o">=</span> <span class="n">_qubit_spec</span>
 
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Dictionary mapping id to new load spec</span>
-<span class="sd">    New load spec distributes the available capacity to each id&#39;s &#39;M&#39; qubits</span>
-<span class="sd">    by changing a subset of them to &#39;A&#39;.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">specs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-    <span class="k">if</span> <span class="n">zoom</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">specs</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="n">specs</span><span class="p">[</span><span class="n">zoom</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">specs</span><span class="p">[</span><span class="n">zoom</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">zoom</span> <span class="k">else</span> <span class="mi">0</span>
-                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">indices</span>
-            <span class="p">]</span>
+    <span class="n">largest_bin_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">largest_bin_index</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">n_qubits</span><span class="si">}</span><span class="s2">b</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">):</span>
+        <span class="n">largest_bin_qubit_spec</span> <span class="o">=</span> <span class="n">largest_bin_qubit_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">largest_bin_str</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mi">1</span>
         <span class="p">)</span>
+    <span class="c1"># qubit_spec = qubit_spec.replace(&quot;M&quot;, &quot;A&quot;, capacity)</span>
 
-    <span class="n">total_load</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">loads</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">total_load</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">specs</span>
-    <span class="k">if</span> <span class="n">capacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">capacity</span> <span class="o">=</span> <span class="n">total_load</span>
-    <span class="n">new_loads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">loads</span> <span class="o">/</span> <span class="n">total_load</span> <span class="o">*</span> <span class="n">capacity</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-
-    <span class="n">remainder</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">capacity</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">new_loads</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">remainder</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="c1"># Add remaining to largest capacities first</span>
-        <span class="n">largest_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">loads</span><span class="p">)[</span><span class="o">-</span><span class="n">remainder</span><span class="p">:]</span>
-        <span class="n">new_loads</span><span class="p">[</span><span class="n">largest_indices</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-
-    <span class="n">new_specs</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">new_load</span> <span class="o">=</span> <span class="n">new_loads</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-        <span class="n">new_spec</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;M&quot;</span><span class="p">)</span>  <span class="c1"># change all active to merged</span>
-        <span class="n">new_spec</span> <span class="o">=</span> <span class="n">new_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
-            <span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">new_load</span>
-        <span class="p">)</span>  <span class="c1"># change first |new_load| merged to active</span>
-        <span class="n">new_specs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_spec</span><span class="p">)</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">new_load</span><span class="p">,</span> <span class="n">new_spec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">new_loads</span><span class="p">,</span> <span class="n">new_specs</span><span class="p">):</span>
-        <span class="n">result</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_spec</span>
-    <span class="k">return</span> <span class="n">result</span></div>
-
-
-
-<div class="viewcode-block" id="distribute2">
-<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.utils.distribute2">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">distribute2</span><span class="p">(</span><span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">if</span> <span class="s2">&quot;M&quot;</span> <span class="ow">in</span> <span class="n">qubit_spec</span><span class="p">:</span>
-        <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">)</span>
-        <span class="n">largest_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probabilities</span><span class="p">)</span>
-        <span class="n">largest_bin_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">largest_bin</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">n_qubits</span><span class="si">}</span><span class="s2">b</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">):</span>
-            <span class="n">qubit_spec</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">largest_bin_str</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">qubit_spec</span> <span class="o">=</span> <span class="n">qubit_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="n">capacity</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">qubit_spec</span></div>
+    <span class="k">return</span> <span class="n">largest_bin_qubit_spec</span></div>
 
 
 
