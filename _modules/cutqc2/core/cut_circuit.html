@@ -963,29 +963,43 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">max_workers</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_workers</span><span class="p">)</span>
         <span class="n">max_workers</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_workers</span><span class="p">,</span> <span class="n">n_basis</span> <span class="o">**</span> <span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">))</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using </span><span class="si">{</span><span class="n">max_workers</span><span class="si">}</span><span class="s2"> workers to compute probabilities&quot;</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
-            <span class="n">futures</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">max_workers</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using </span><span class="si">{</span><span class="n">max_workers</span><span class="si">}</span><span class="s2"> workers to compute probabilities&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="n">max_workers</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+                <span class="n">futures</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">initializations_list</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">batched</span><span class="p">(</span>
+                    <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_basis</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">)),</span>
+                    <span class="n">batch_size</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="n">futures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_compute_probabilities</span><span class="p">,</span>
+                            <span class="n">effective_qubits_dict</span><span class="p">,</span>
+                            <span class="n">active_qubits</span><span class="p">,</span>
+                            <span class="n">in_to_out_mask</span><span class="p">,</span>
+                            <span class="n">in_starts</span><span class="p">,</span>
+                            <span class="n">out_starts</span><span class="p">,</span>
+                            <span class="n">initializations_list</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Work queued&quot;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">future</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">)):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)</span><span class="si">}</span><span class="s2"> done&quot;</span><span class="p">)</span>
+                    <span class="n">result</span> <span class="o">+=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">initializations_list</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">batched</span><span class="p">(</span>
                 <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_basis</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">)),</span> <span class="n">batch_size</span>
             <span class="p">):</span>
-                <span class="n">futures</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_probabilities</span><span class="p">,</span>
-                        <span class="n">effective_qubits_dict</span><span class="p">,</span>
-                        <span class="n">active_qubits</span><span class="p">,</span>
-                        <span class="n">in_to_out_mask</span><span class="p">,</span>
-                        <span class="n">in_starts</span><span class="p">,</span>
-                        <span class="n">out_starts</span><span class="p">,</span>
-                        <span class="n">initializations_list</span><span class="p">,</span>
-                    <span class="p">)</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_probabilities</span><span class="p">(</span>
+                    <span class="n">effective_qubits_dict</span><span class="p">,</span>
+                    <span class="n">active_qubits</span><span class="p">,</span>
+                    <span class="n">in_to_out_mask</span><span class="p">,</span>
+                    <span class="n">in_starts</span><span class="p">,</span>
+                    <span class="n">out_starts</span><span class="p">,</span>
+                    <span class="n">initializations_list</span><span class="p">,</span>
                 <span class="p">)</span>
-
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Work queued&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">future</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">as_completed</span><span class="p">(</span><span class="n">futures</span><span class="p">)):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">futures</span><span class="p">)</span><span class="si">}</span><span class="s2"> done&quot;</span><span class="p">)</span>
-                <span class="n">result</span> <span class="o">+=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 
         <span class="n">result</span> <span class="o">/=</span> <span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">num_cuts</span>
         <span class="k">return</span> <span class="n">result</span></div>
