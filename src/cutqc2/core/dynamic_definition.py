@@ -121,9 +121,8 @@ class DynamicDefinition:
 
             bin_probabilities = self.prob_fn(bin_qubit_spec)
             if np.sum(bin_probabilities) >= self.epsilon:
-                if bin_qubit_spec not in self._qubit_specs_in_bins:
-                    bin = Bin(bin_qubit_spec, bin_probabilities)
-                    self.push(bin)
+                bin = Bin(bin_qubit_spec, bin_probabilities)
+                self.push(bin)
 
         self._recurse(recursion_level + 1, max_recursion)
 
