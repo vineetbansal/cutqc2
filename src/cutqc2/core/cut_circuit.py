@@ -757,57 +757,18 @@ class CutCircuit:
         return effective_qubits_dict, active_qubits
 
     def compute_probabilities(self, qubit_spec: str | None = None) -> np.array:
-        n_basis: int = 4  # I/X/Y/Z
-        n_subcircuits: int = len(self)
-
-        self.smart_order = np.argsort(
-            [node["effective"] for node in self.compute_graph.nodes.values()]
-        )
         effective_qubits_dict, active_qubits = self.get_subcircuit_effective_qubits(
             qubit_spec
         )
-
-        incoming_to_outgoing_graph = self.compute_graph.incoming_to_outgoing_graph()
-        in_degrees = [
-            len([k for k in incoming_to_outgoing_graph if k[0] == subcircuit])
-            for subcircuit in range(n_subcircuits)
-        ]
-        out_degrees = [
-            len([v for v in incoming_to_outgoing_graph.values() if v[0] == subcircuit])
-            for subcircuit in range(n_subcircuits)
-        ]
-
-        in_starts = np.insert(np.cumsum(in_degrees), 0, 0)
-        out_starts = np.insert(np.cumsum(out_degrees), 0, 0)
-
-        in_to_out_permutation = []
-        out_indices = {}
-        counter = 0
-        for subcircuit in range(n_subcircuits):
-            out_indices[subcircuit] = list(
-                range(counter, counter + out_degrees[subcircuit])
-            )
-            counter += out_degrees[subcircuit]
-
-        for subcircuit in range(n_subcircuits):
-            from_subcircuits = [
-                v for k, v in incoming_to_outgoing_graph.items() if k[0] == subcircuit
-            ]
-            for from_subcircuit, from_qubit in from_subcircuits:
-                in_to_out_permutation.append(out_indices[from_subcircuit][from_qubit])
-        in_to_out_mask = np.argsort(in_to_out_permutation)
-
-        # ----- Postprocessing ----- #
-
         subcircuit_packed_probs = self.get_all_subcircuit_packed_probs(
             qubit_specs=effective_qubits_dict
         )
 
         result = np.zeros(2**active_qubits, dtype=np.float32)
-        total_initializations = n_basis ** sum(in_degrees)
+        total_initializations = self.n_basis ** sum(self.in_degrees)
 
         for j, initializations in enumerate(
-            itertools.product(range(n_basis), repeat=sum(in_degrees))
+            itertools.product(range(self.n_basis), repeat=sum(self.in_degrees))
         ):
             if (j + 1) % 10_000 == 0:
                 logger.info(f"{j + 1}/{total_initializations}")
@@ -817,15 +778,19 @@ class CutCircuit:
             # We wish to 'count up', with the 0th index advancing fastest,
             # so we reverse the obtained tuple from `itertools.product`.
             initializations = initializations[::-1]
-            measurements = np.array(initializations)[in_to_out_mask]
+            measurements = np.array(initializations)[self.in_to_out_mask]
 
             initialization_probabilities = None
             for subcircuit in self.smart_order:
                 subcircuit_initializations = tuple(
-                    initializations[in_starts[subcircuit] : in_starts[subcircuit + 1]]
+                    initializations[
+                        self.in_starts[subcircuit] : self.in_starts[subcircuit + 1]
+                    ]
                 )
                 subcircuit_measurements = tuple(
-                    measurements[out_starts[subcircuit] : out_starts[subcircuit + 1]]
+                    measurements[
+                        self.out_starts[subcircuit] : self.out_starts[subcircuit + 1]
+                    ]
                 )
                 subcircuit_index = (
                     subcircuit_initializations + subcircuit_measurements
@@ -852,6 +817,43 @@ class CutCircuit:
             capacity = self.compute_graph.effective_qubits
         else:
             capacity = min(capacity, self.compute_graph.effective_qubits)
+
+        self.n_basis: int = 4  # I/X/Y/Z
+        n_subcircuits: int = len(self)
+
+        self.smart_order = np.argsort(
+            [node["effective"] for node in self.compute_graph.nodes.values()]
+        )
+
+        incoming_to_outgoing_graph = self.compute_graph.incoming_to_outgoing_graph()
+        self.in_degrees = [
+            len([k for k in incoming_to_outgoing_graph if k[0] == subcircuit])
+            for subcircuit in range(n_subcircuits)
+        ]
+        out_degrees = [
+            len([v for v in incoming_to_outgoing_graph.values() if v[0] == subcircuit])
+            for subcircuit in range(n_subcircuits)
+        ]
+
+        self.in_starts = np.insert(np.cumsum(self.in_degrees), 0, 0)
+        self.out_starts = np.insert(np.cumsum(out_degrees), 0, 0)
+
+        in_to_out_permutation = []
+        out_indices = {}
+        counter = 0
+        for subcircuit in range(n_subcircuits):
+            out_indices[subcircuit] = list(
+                range(counter, counter + out_degrees[subcircuit])
+            )
+            counter += out_degrees[subcircuit]
+
+        for subcircuit in range(n_subcircuits):
+            from_subcircuits = [
+                v for k, v in incoming_to_outgoing_graph.items() if k[0] == subcircuit
+            ]
+            for from_subcircuit, from_qubit in from_subcircuits:
+                in_to_out_permutation.append(out_indices[from_subcircuit][from_qubit])
+        self.in_to_out_mask = np.argsort(in_to_out_permutation)
 
         self.dynamic_definition = DynamicDefinition(
             num_qubits=self.compute_graph.effective_qubits,

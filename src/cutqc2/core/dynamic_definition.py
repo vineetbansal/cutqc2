@@ -74,8 +74,6 @@ class DynamicDefinition:
         return bin
 
     def run(self, max_recursion: int = 10) -> np.ndarray:
-        assert max_recursion >= 1, "max_recursion must be at least 1"
-
         # clear key attributes before running
         self.recursion_level = 0
         self.bins = []
@@ -99,8 +97,8 @@ class DynamicDefinition:
         current_bin = self.pop()
         qubit_spec = current_bin.qubit_spec
         if (
-            recursion_level > 1 and "M" not in qubit_spec
-        ):  # no merged bits; nothing to zoom-in
+            "M" not in qubit_spec and "A" not in qubit_spec
+        ):  # zoomed-in completely; nothing else to do
             # undo the pop!
             self.push(current_bin)
             return
@@ -109,9 +107,8 @@ class DynamicDefinition:
         for j in range(2**self.capacity):
             bin_qubit_spec = qubit_spec
 
-            if recursion_level > 1:
-                # For this bin, mark `capacity` (possibly fewer) merged qubits as active
-                bin_qubit_spec = bin_qubit_spec.replace("M", "A", self.capacity)
+            # For this bin, mark `capacity` (possibly fewer) merged qubits as active
+            bin_qubit_spec = bin_qubit_spec.replace("M", "A", self.capacity)
 
             # Replace all active qubits with the binary representation
             # of j - these become the "zoomed-in" bits.
@@ -130,8 +127,8 @@ class DynamicDefinition:
     def probabilities(self) -> np.ndarray:
         probabilities = np.zeros(2**self.num_qubits)
         for bin in self.bins:
-            merged = unmerge_prob_vector(bin.probabilities, bin.qubit_spec)
-            probabilities += merged
+            unmerged = unmerge_prob_vector(bin.probabilities, bin.qubit_spec)
+            probabilities += unmerged
         return probabilities
 
     def plot(self):
