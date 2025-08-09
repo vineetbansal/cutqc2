@@ -122,8 +122,6 @@
 <div class="viewcode-block" id="DynamicDefinition.run">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.dynamic_definition.DynamicDefinition.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_recursion</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">max_recursion</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;max_recursion must be at least 1&quot;</span>
-
         <span class="c1"># clear key attributes before running</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">recursion_level</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bins</span> <span class="o">=</span> <span class="p">[]</span>
@@ -148,8 +146,8 @@
         <span class="n">current_bin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
         <span class="n">qubit_spec</span> <span class="o">=</span> <span class="n">current_bin</span><span class="o">.</span><span class="n">qubit_spec</span>
         <span class="k">if</span> <span class="p">(</span>
-            <span class="n">recursion_level</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s2">&quot;M&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qubit_spec</span>
-        <span class="p">):</span>  <span class="c1"># no merged bits; nothing to zoom-in</span>
+            <span class="s2">&quot;M&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qubit_spec</span> <span class="ow">and</span> <span class="s2">&quot;A&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">qubit_spec</span>
+        <span class="p">):</span>  <span class="c1"># zoomed-in completely; nothing else to do</span>
             <span class="c1"># undo the pop!</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">current_bin</span><span class="p">)</span>
             <span class="k">return</span>
@@ -158,9 +156,8 @@
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="p">):</span>
             <span class="n">bin_qubit_spec</span> <span class="o">=</span> <span class="n">qubit_spec</span>
 
-            <span class="k">if</span> <span class="n">recursion_level</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="c1"># For this bin, mark `capacity` (possibly fewer) merged qubits as active</span>
-                <span class="n">bin_qubit_spec</span> <span class="o">=</span> <span class="n">bin_qubit_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="p">)</span>
+            <span class="c1"># For this bin, mark `capacity` (possibly fewer) merged qubits as active</span>
+            <span class="n">bin_qubit_spec</span> <span class="o">=</span> <span class="n">bin_qubit_spec</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span><span class="p">)</span>
 
             <span class="c1"># Replace all active qubits with the binary representation</span>
             <span class="c1"># of j - these become the &quot;zoomed-in&quot; bits.</span>
@@ -179,8 +176,8 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="n">probabilities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">)</span>
         <span class="k">for</span> <span class="nb">bin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="p">:</span>
-            <span class="n">merged</span> <span class="o">=</span> <span class="n">unmerge_prob_vector</span><span class="p">(</span><span class="nb">bin</span><span class="o">.</span><span class="n">probabilities</span><span class="p">,</span> <span class="nb">bin</span><span class="o">.</span><span class="n">qubit_spec</span><span class="p">)</span>
-            <span class="n">probabilities</span> <span class="o">+=</span> <span class="n">merged</span>
+            <span class="n">unmerged</span> <span class="o">=</span> <span class="n">unmerge_prob_vector</span><span class="p">(</span><span class="nb">bin</span><span class="o">.</span><span class="n">probabilities</span><span class="p">,</span> <span class="nb">bin</span><span class="o">.</span><span class="n">qubit_spec</span><span class="p">)</span>
+            <span class="n">probabilities</span> <span class="o">+=</span> <span class="n">unmerged</span>
         <span class="k">return</span> <span class="n">probabilities</span>
 
 <div class="viewcode-block" id="DynamicDefinition.plot">

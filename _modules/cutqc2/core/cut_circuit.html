@@ -859,57 +859,18 @@
 <div class="viewcode-block" id="CutCircuit.compute_probabilities">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.compute_probabilities">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
-        <span class="n">n_basis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># I/X/Y/Z</span>
-        <span class="n">n_subcircuits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
-        <span class="p">)</span>
         <span class="n">effective_qubits_dict</span><span class="p">,</span> <span class="n">active_qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_subcircuit_effective_qubits</span><span class="p">(</span>
             <span class="n">qubit_spec</span>
         <span class="p">)</span>
-
-        <span class="n">incoming_to_outgoing_graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">incoming_to_outgoing_graph</span><span class="p">()</span>
-        <span class="n">in_degrees</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="nb">len</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span> <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="n">out_degrees</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="nb">len</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">)</span>
-        <span class="p">]</span>
-
-        <span class="n">in_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">out_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">out_degrees</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="n">in_to_out_permutation</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">out_indices</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">):</span>
-            <span class="n">out_indices</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-                <span class="nb">range</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">counter</span> <span class="o">+</span> <span class="n">out_degrees</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">])</span>
-            <span class="p">)</span>
-            <span class="n">counter</span> <span class="o">+=</span> <span class="n">out_degrees</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">):</span>
-            <span class="n">from_subcircuits</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span>
-            <span class="p">]</span>
-            <span class="k">for</span> <span class="n">from_subcircuit</span><span class="p">,</span> <span class="n">from_qubit</span> <span class="ow">in</span> <span class="n">from_subcircuits</span><span class="p">:</span>
-                <span class="n">in_to_out_permutation</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out_indices</span><span class="p">[</span><span class="n">from_subcircuit</span><span class="p">][</span><span class="n">from_qubit</span><span class="p">])</span>
-        <span class="n">in_to_out_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">in_to_out_permutation</span><span class="p">)</span>
-
-        <span class="c1"># ----- Postprocessing ----- #</span>
-
         <span class="n">subcircuit_packed_probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_subcircuit_packed_probs</span><span class="p">(</span>
             <span class="n">qubit_specs</span><span class="o">=</span><span class="n">effective_qubits_dict</span>
         <span class="p">)</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">active_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="n">total_initializations</span> <span class="o">=</span> <span class="n">n_basis</span> <span class="o">**</span> <span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">)</span>
+        <span class="n">total_initializations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_basis</span> <span class="o">**</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_degrees</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">initializations</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-            <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_basis</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="n">in_degrees</span><span class="p">))</span>
+            <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_basis</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_degrees</span><span class="p">))</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10_000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">j</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_initializations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -919,15 +880,19 @@
             <span class="c1"># We wish to &#39;count up&#39;, with the 0th index advancing fastest,</span>
             <span class="c1"># so we reverse the obtained tuple from `itertools.product`.</span>
             <span class="n">initializations</span> <span class="o">=</span> <span class="n">initializations</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="n">measurements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">initializations</span><span class="p">)[</span><span class="n">in_to_out_mask</span><span class="p">]</span>
+            <span class="n">measurements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">initializations</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">in_to_out_mask</span><span class="p">]</span>
 
             <span class="n">initialization_probabilities</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span><span class="p">:</span>
                 <span class="n">subcircuit_initializations</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">initializations</span><span class="p">[</span><span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="n">initializations</span><span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="p">]</span>
                 <span class="p">)</span>
                 <span class="n">subcircuit_measurements</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                    <span class="n">measurements</span><span class="p">[</span><span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="n">measurements</span><span class="p">[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_starts</span><span class="p">[</span><span class="n">subcircuit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="p">]</span>
                 <span class="p">)</span>
                 <span class="n">subcircuit_index</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="n">subcircuit_initializations</span> <span class="o">+</span> <span class="n">subcircuit_measurements</span>
@@ -957,6 +922,43 @@
             <span class="n">capacity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">capacity</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_basis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># I/X/Y/Z</span>
+        <span class="n">n_subcircuits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">smart_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">node</span><span class="p">[</span><span class="s2">&quot;effective&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+        <span class="p">)</span>
+
+        <span class="n">incoming_to_outgoing_graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">incoming_to_outgoing_graph</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_degrees</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">len</span><span class="p">([</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span> <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">out_degrees</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">len</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">in_degrees</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">out_degrees</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">in_to_out_permutation</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">out_indices</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">):</span>
+            <span class="n">out_indices</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">counter</span> <span class="o">+</span> <span class="n">out_degrees</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">counter</span> <span class="o">+=</span> <span class="n">out_degrees</span><span class="p">[</span><span class="n">subcircuit</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">subcircuit</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_subcircuits</span><span class="p">):</span>
+            <span class="n">from_subcircuits</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">incoming_to_outgoing_graph</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">subcircuit</span>
+            <span class="p">]</span>
+            <span class="k">for</span> <span class="n">from_subcircuit</span><span class="p">,</span> <span class="n">from_qubit</span> <span class="ow">in</span> <span class="n">from_subcircuits</span><span class="p">:</span>
+                <span class="n">in_to_out_permutation</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out_indices</span><span class="p">[</span><span class="n">from_subcircuit</span><span class="p">][</span><span class="n">from_qubit</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_to_out_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">in_to_out_permutation</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span> <span class="o">=</span> <span class="n">DynamicDefinition</span><span class="p">(</span>
             <span class="n">num_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_graph</span><span class="o">.</span><span class="n">effective_qubits</span><span class="p">,</span>
