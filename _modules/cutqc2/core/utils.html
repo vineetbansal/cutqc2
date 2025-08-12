@@ -33,7 +33,12 @@
           <div class="body" role="main">
             
   <h1>Source code for cutqc2.core.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dask.array</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">da</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="permute_bits">
@@ -44,6 +49,26 @@
     <span class="c1"># Get bit i from position permutation[i]</span>
     <span class="n">binary_n_permuted</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">binary_n</span><span class="p">[</span><span class="n">permutation</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_bits</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">binary_n_permuted</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="permute_bits_vectorized">
+<a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.utils.permute_bits_vectorized">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">permute_bits_vectorized</span><span class="p">(</span>
+    <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">permutation</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_bits</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="n">n_bits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">permutation</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">dest_bit_msb</span><span class="p">,</span> <span class="n">src_bit_msb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">permutation</span><span class="p">):</span>
+        <span class="c1"># Convert MSB index to LSB index for bit operations</span>
+        <span class="n">src_bit_lsb</span> <span class="o">=</span> <span class="n">n_bits</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">src_bit_msb</span>
+        <span class="n">dest_bit_lsb</span> <span class="o">=</span> <span class="n">n_bits</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">dest_bit_msb</span>
+
+        <span class="c1"># Extract source bit and place in destination position</span>
+        <span class="n">result</span> <span class="o">|=</span> <span class="p">((</span><span class="n">arr</span> <span class="o">&gt;&gt;</span> <span class="n">src_bit_lsb</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">dest_bit_lsb</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
 
 
 
@@ -137,7 +162,12 @@
 
 <div class="viewcode-block" id="unmerge_prob_vector">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.utils.unmerge_prob_vector">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">unmerge_prob_vector</span><span class="p">(</span><span class="n">merged_prob_vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unmerge_prob_vector</span><span class="p">(</span>
+    <span class="n">merged_prob_vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">preallocated</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">in_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Expand a merged quantum probability vector back to a full vector</span>
 <span class="sd">    by evenly distributing over merged qubits and conditioning on fixed ones.</span>
@@ -151,11 +181,11 @@
 <span class="sd">        - &quot;A&quot;: active (preserved)</span>
 <span class="sd">        - &quot;M&quot;: merged (marginalized out)</span>
 <span class="sd">        - &quot;0&quot;/&quot;1&quot;: fixed bits</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    np.ndarray</span>
-<span class="sd">        Expanded full probability vector of shape (2^num_qubits,)</span>
+<span class="sd">    preallocated : da.Array | np.ndarray | None</span>
+<span class="sd">        Preallocated array to store expanded probabilities (2^num_qubits,)</span>
+<span class="sd">        If None, a new array will be created.</span>
+<span class="sd">    in_memory : bool, optional</span>
+<span class="sd">        If True, compute the dask array immediately, by default False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubit_spec</span><span class="p">)</span>
     <span class="n">active_qubit_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">qubit_spec</span><span class="p">)</span> <span class="k">if</span> <span class="n">q</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">]</span>
@@ -167,8 +197,19 @@
     <span class="n">num_active</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">active_qubit_indices</span><span class="p">)</span>
     <span class="n">num_merged</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">merged_qubit_indices</span><span class="p">)</span>
 
-    <span class="n">expanded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">num_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">in_memory</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">preallocated</span><span class="p">,</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
+        <span class="n">unmerged</span> <span class="o">=</span> <span class="n">preallocated</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">in_memory</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">unmerged</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">preallocated</span>
+            <span class="k">if</span> <span class="n">preallocated</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">num_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
 
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Unmerging probabilities for </span><span class="si">{</span><span class="n">num_qubits</span><span class="si">}</span><span class="s2"> qubits (</span><span class="si">{</span><span class="n">num_active</span><span class="si">}</span><span class="s2"> active)&quot;</span>
+    <span class="p">)</span>
     <span class="k">for</span> <span class="n">full_state</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">num_qubits</span><span class="p">):</span>
         <span class="n">match</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">fixed_qubit_conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -190,10 +231,19 @@
 
         <span class="n">num_merge_combinations</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">num_merged</span>
 
-        <span class="c1"># Uniformly distribute merged prob</span>
-        <span class="n">expanded</span><span class="p">[</span><span class="n">full_state</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged_prob_vector</span><span class="p">[</span><span class="n">active_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_merge_combinations</span>
+        <span class="k">if</span> <span class="n">full_state</span><span class="o">.</span><span class="n">bit_count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">full_state</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">num_qubits</span><span class="si">}</span><span class="s2">b</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">expanded</span></div>
+        <span class="c1"># Uniformly distribute merged prob</span>
+        <span class="n">unmerged</span><span class="p">[</span><span class="n">full_state</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">merged_prob_vector</span><span class="p">[</span><span class="n">active_index</span><span class="p">]</span> <span class="o">/</span> <span class="n">num_merge_combinations</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">in_memory</span> <span class="ow">and</span> <span class="n">preallocated</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Updating preallocated array in memory&quot;</span><span class="p">)</span>
+        <span class="n">preallocated</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">unmerged</span>
+
+    <span class="k">return</span> <span class="n">unmerged</span></div>
 
 </pre></div>
 

@@ -81,11 +81,17 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">num_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">prob_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">prob_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+        <span class="n">preallocated</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span> <span class="o">=</span> <span class="n">num_qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prob_fn</span> <span class="o">=</span> <span class="n">prob_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="o">=</span> <span class="n">preallocated</span>
         <span class="c1"># Probability-mass threshold below which we do not process a bin.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
 
@@ -136,7 +142,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">initial_bin</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_recurse</span><span class="p">(</span><span class="n">recursion_level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_recursion</span><span class="o">=</span><span class="n">max_recursion</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span></div>
+
+        <span class="k">for</span> <span class="nb">bin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="p">:</span>
+            <span class="n">unmerge_prob_vector</span><span class="p">(</span><span class="nb">bin</span><span class="o">.</span><span class="n">probabilities</span><span class="p">,</span> <span class="nb">bin</span><span class="o">.</span><span class="n">qubit_spec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_recurse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recursion_level</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_recursion</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
@@ -171,14 +180,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="nb">bin</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_recurse</span><span class="p">(</span><span class="n">recursion_level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_recursion</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="n">probabilities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">)</span>
-        <span class="k">for</span> <span class="nb">bin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins</span><span class="p">:</span>
-            <span class="n">unmerged</span> <span class="o">=</span> <span class="n">unmerge_prob_vector</span><span class="p">(</span><span class="nb">bin</span><span class="o">.</span><span class="n">probabilities</span><span class="p">,</span> <span class="nb">bin</span><span class="o">.</span><span class="n">qubit_spec</span><span class="p">)</span>
-            <span class="n">probabilities</span> <span class="o">+=</span> <span class="n">unmerged</span>
-        <span class="k">return</span> <span class="n">probabilities</span>
 
 <div class="viewcode-block" id="DynamicDefinition.plot">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.dynamic_definition.DynamicDefinition.plot">[docs]</a>

@@ -44,7 +44,7 @@
 <span id="cutqc2-core-cut-circuit-module"></span><h2>cutqc2.core.cut_circuit module<a class="headerlink" href="#module-cutqc2.core.cut_circuit" title="Link to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">CutCircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.cut_circuit.</span></span><span class="sig-name descname"><span class="pre">CutCircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preallocate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.add_cut">
@@ -204,7 +204,7 @@ preserve gates that span two wires.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.cut_circuit.CutCircuit.plot">
-<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_ground_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.plot" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_ground_truth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/cut_circuit.html#CutCircuit.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.cut_circuit.CutCircuit.plot" title="Link to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
@@ -467,7 +467,7 @@ Note: <cite>gate_index</cite> assumes that only inter-wire gates are considered.
 
 <dl class="py class">
 <dt class="sig sig-object py" id="cutqc2.core.dynamic_definition.DynamicDefinition">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dynamic_definition.</span></span><span class="sig-name descname"><span class="pre">DynamicDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_qubits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prob_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dynamic_definition.html#DynamicDefinition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dynamic_definition.DynamicDefinition" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cutqc2.core.dynamic_definition.</span></span><span class="sig-name descname"><span class="pre">DynamicDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_qubits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prob_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preallocated</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/dynamic_definition.html#DynamicDefinition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.dynamic_definition.DynamicDefinition" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>DynamicDefinition is a class that implements the dynamic definition
 algorithm for quantum probability distribution reconstruction.
@@ -487,11 +487,6 @@ probability mass.</p>
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="cutqc2.core.dynamic_definition.DynamicDefinition.probabilities">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">probabilities</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#cutqc2.core.dynamic_definition.DynamicDefinition.probabilities" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="cutqc2.core.dynamic_definition.DynamicDefinition.push">
@@ -559,8 +554,18 @@ indicating:
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="cutqc2.core.utils.permute_bits_vectorized">
+<span class="sig-prename descclassname"><span class="pre">cutqc2.core.utils.</span></span><span class="sig-name descname"><span class="pre">permute_bits_vectorized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permutation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_bits</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/utils.html#permute_bits_vectorized"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.utils.permute_bits_vectorized" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="cutqc2.core.utils.unmerge_prob_vector">
-<span class="sig-prename descclassname"><span class="pre">cutqc2.core.utils.</span></span><span class="sig-name descname"><span class="pre">unmerge_prob_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">merged_prob_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qubit_spec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/utils.html#unmerge_prob_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.utils.unmerge_prob_vector" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">cutqc2.core.utils.</span></span><span class="sig-name descname"><span class="pre">unmerge_prob_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">merged_prob_vector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qubit_spec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preallocated</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/cutqc2/core/utils.html#unmerge_prob_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#cutqc2.core.utils.unmerge_prob_vector" title="Link to this definition">¶</a></dt>
 <dd><p>Expand a merged quantum probability vector back to a full vector
 by evenly distributing over merged qubits and conditioning on fixed ones.</p>
 <dl class="field-list simple">
@@ -571,13 +576,13 @@ by evenly distributing over merged qubits and conditioning on fixed ones.</p>
 - “A”: active (preserved)
 - “M”: merged (marginalized out)
 - “0”/”1”: fixed bits</p></li>
+<li><p><strong>preallocated</strong> (<em>da.Array</em><em> | </em><em>np.ndarray</em><em> | </em><em>None</em>) – Preallocated array to store expanded probabilities (2^num_qubits,)
+If None, a new array will be created.</p></li>
+<li><p><strong>in_memory</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, compute the dask array immediately, by default False</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Expanded full probability vector of shape (2^num_qubits,)</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>np.ndarray</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
