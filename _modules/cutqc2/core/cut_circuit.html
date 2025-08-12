@@ -178,8 +178,9 @@
 
         <span class="c1"># Keep imports local to this function</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.h5</span><span class="w"> </span><span class="kn">import</span> <span class="n">h5_to_cut_circuit</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.zarr</span><span class="w"> </span><span class="kn">import</span> <span class="n">zarr_to_cut_circuit</span>
 
-        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">h5_to_cut_circuit</span><span class="p">}</span>
+        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">h5_to_cut_circuit</span><span class="p">,</span> <span class="s2">&quot;.zarr&quot;</span><span class="p">:</span> <span class="n">zarr_to_cut_circuit</span><span class="p">}</span>
         <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="n">supported_formats</span><span class="p">,</span> <span class="s2">&quot;Unsupported format&quot;</span>
         <span class="k">return</span> <span class="n">supported_formats</span><span class="p">[</span><span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span><span class="p">](</span><span class="n">filepath</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
@@ -1127,8 +1128,9 @@
 
         <span class="c1"># Keep imports local to this function</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.h5</span><span class="w"> </span><span class="kn">import</span> <span class="n">cut_circuit_to_h5</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">cutqc2.io.zarr</span><span class="w"> </span><span class="kn">import</span> <span class="n">cut_circuit_to_zarr</span>
 
-        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">cut_circuit_to_h5</span><span class="p">}</span>
+        <span class="n">supported_formats</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;.h5&quot;</span><span class="p">:</span> <span class="n">cut_circuit_to_h5</span><span class="p">,</span> <span class="s2">&quot;.zarr&quot;</span><span class="p">:</span> <span class="n">cut_circuit_to_zarr</span><span class="p">}</span>
         <span class="k">assert</span> <span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">in</span> <span class="n">supported_formats</span><span class="p">,</span> <span class="s2">&quot;Unsupported format&quot;</span>
         <span class="k">return</span> <span class="n">supported_formats</span><span class="p">[</span><span class="n">filepath</span><span class="o">.</span><span class="n">suffix</span><span class="p">](</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 

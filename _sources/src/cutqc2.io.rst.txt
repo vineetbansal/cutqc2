@@ -12,6 +12,14 @@ cutqc2.io.h5 module
    :undoc-members:
    :show-inheritance:
 
+cutqc2.io.zarr module
+---------------------
+
+.. automodule:: cutqc2.io.zarr
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
