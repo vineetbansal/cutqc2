@@ -86,12 +86,17 @@
         <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">prob_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
         <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
-        <span class="n">preallocated</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">preallocated</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span> <span class="o">=</span> <span class="n">num_qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capacity</span> <span class="o">=</span> <span class="n">capacity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prob_fn</span> <span class="o">=</span> <span class="n">prob_fn</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="o">=</span> <span class="n">preallocated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">preallocated</span>
+            <span class="k">if</span> <span class="n">preallocated</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">num_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
         <span class="c1"># Probability-mass threshold below which we do not process a bin.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
 

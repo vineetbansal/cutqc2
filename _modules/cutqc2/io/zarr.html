@@ -209,7 +209,7 @@
     <span class="k">if</span> <span class="s2">&quot;probabilities&quot;</span> <span class="ow">in</span> <span class="n">root</span><span class="p">:</span>
         <span class="c1"># Don&#39;t load these by performing a `[()]`,</span>
         <span class="c1"># but maintain a reference</span>
-        <span class="n">cut_circuit</span><span class="o">.</span><span class="n">preallocated_probability_vector</span> <span class="o">=</span> <span class="n">root</span><span class="p">[</span><span class="s2">&quot;probabilities&quot;</span><span class="p">]</span>
+        <span class="n">cut_circuit</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">root</span><span class="p">[</span><span class="s2">&quot;probabilities&quot;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">reconstruction_qubit_order</span><span class="p">:</span>
         <span class="n">cut_circuit</span><span class="o">.</span><span class="n">reconstruction_qubit_order</span> <span class="o">=</span> <span class="n">reconstruction_qubit_order</span>

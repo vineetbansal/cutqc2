@@ -35,7 +35,7 @@
   <h1>Source code for cutqc2.core.utils</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">dask.array</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">da</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zarr</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -165,7 +165,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">unmerge_prob_vector</span><span class="p">(</span>
     <span class="n">merged_prob_vector</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">qubit_spec</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">preallocated</span><span class="p">:</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">preallocated</span><span class="p">:</span> <span class="n">zarr</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">in_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -181,11 +181,11 @@
 <span class="sd">        - &quot;A&quot;: active (preserved)</span>
 <span class="sd">        - &quot;M&quot;: merged (marginalized out)</span>
 <span class="sd">        - &quot;0&quot;/&quot;1&quot;: fixed bits</span>
-<span class="sd">    preallocated : da.Array | np.ndarray | None</span>
+<span class="sd">    preallocated : zarr.Array | np.ndarray | None</span>
 <span class="sd">        Preallocated array to store expanded probabilities (2^num_qubits,)</span>
 <span class="sd">        If None, a new array will be created.</span>
 <span class="sd">    in_memory : bool, optional</span>
-<span class="sd">        If True, compute the dask array immediately, by default False</span>
+<span class="sd">        If True, compute the array immediately, by default False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubit_spec</span><span class="p">)</span>
     <span class="n">active_qubit_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">qubit_spec</span><span class="p">)</span> <span class="k">if</span> <span class="n">q</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span><span class="p">]</span>
@@ -197,8 +197,8 @@
     <span class="n">num_active</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">active_qubit_indices</span><span class="p">)</span>
     <span class="n">num_merged</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">merged_qubit_indices</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">in_memory</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">preallocated</span><span class="p">,</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
-        <span class="n">unmerged</span> <span class="o">=</span> <span class="n">preallocated</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">in_memory</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">preallocated</span><span class="p">,</span> <span class="n">zarr</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
+        <span class="n">unmerged</span> <span class="o">=</span> <span class="n">preallocated</span><span class="p">[:]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">in_memory</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">unmerged</span> <span class="o">=</span> <span class="p">(</span>
@@ -230,9 +230,6 @@
                 <span class="n">active_index</span> <span class="o">|=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">num_active</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">out_pos</span><span class="p">)</span>
 
         <span class="n">num_merge_combinations</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">num_merged</span>
-
-        <span class="k">if</span> <span class="n">full_state</span><span class="o">.</span><span class="n">bit_count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">full_state</span><span class="si">:</span><span class="s2">0</span><span class="si">{</span><span class="n">num_qubits</span><span class="si">}</span><span class="s2">b</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="c1"># Uniformly distribute merged prob</span>
         <span class="n">unmerged</span><span class="p">[</span><span class="n">full_state</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>

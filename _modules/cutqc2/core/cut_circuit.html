@@ -42,8 +42,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dask.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressBar</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">dask.array</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">da</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zarr</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantumCircuit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">qiskit.circuit.operation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Operation</span>
@@ -135,9 +134,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span><span class="p">:</span> <span class="n">DynamicDefinition</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">da</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="n">zarr</span><span class="o">.</span><span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">preallocate</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="o">=</span> <span class="n">zarr</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;float32&quot;</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlabeled_circuit</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="n">fold</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
@@ -920,7 +919,11 @@
 <div class="viewcode-block" id="CutCircuit.postprocess">
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.postprocess">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">postprocess</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_recursion</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_recursion</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">quasi</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">compute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="c1"># reset old computations before proceeding</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -983,20 +986,23 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Permuting bits to match original circuit order&quot;</span><span class="p">)</span>
         <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">unmerged_probabilities</span><span class="p">)</span>
         <span class="n">permuted_indices</span> <span class="o">=</span> <span class="n">permute_bits_vectorized</span><span class="p">(</span>
-            <span class="n">arr</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unmerged_probabilities</span><span class="p">)),</span>
+            <span class="n">arr</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">unmerged_probabilities</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
             <span class="n">permutation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reconstruction_flat_qubit_order</span><span class="p">(),</span>
             <span class="n">n_bits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">reconstructed_probabilities</span><span class="p">[</span><span class="n">permuted_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">unmerged_probabilities</span>
-        <span class="k">with</span> <span class="n">ProgressBar</span><span class="p">():</span>
-            <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">reconstructed_probabilities</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converting quasi to real probabilities&quot;</span><span class="p">)</span>
-        <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
-            <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_probabilities</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quasi</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Converting quasi to real probabilities&quot;</span><span class="p">)</span>
+            <span class="n">reconstructed_probabilities</span> <span class="o">=</span> <span class="n">quasi_to_real</span><span class="p">(</span>
+                <span class="n">quasiprobability</span><span class="o">=</span><span class="n">reconstructed_probabilities</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span>
+            <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">reconstructed_probabilities</span>
-        <span class="k">return</span> <span class="n">reconstructed_probabilities</span></div>
+
+        <span class="k">if</span> <span class="n">compute</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">zarr</span><span class="o">.</span><span class="n">Array</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">[:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span></div>
 
 
 <div class="viewcode-block" id="CutCircuit.get_ground_truth">
@@ -1010,7 +1016,7 @@
 <a class="viewcode-back" href="../../../src/cutqc2.core.html#cutqc2.core.cut_circuit.CutCircuit.verify">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">probabilities</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">capacity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_recursion</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;statevector_simulator&quot;</span><span class="p">,</span>
@@ -1018,10 +1024,6 @@
         <span class="n">raise_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Verifying cut circuit against original circuit&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">probabilities</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocess</span><span class="p">(</span>
-                <span class="n">capacity</span><span class="o">=</span><span class="n">capacity</span><span class="p">,</span> <span class="n">max_recursion</span><span class="o">=</span><span class="n">max_recursion</span>
-            <span class="p">)</span>
         <span class="n">ground_truth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ground_truth</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
 
         <span class="n">approximation_error</span> <span class="o">=</span> <span class="p">(</span>
@@ -1164,14 +1166,15 @@
             <span class="n">ground_truth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ground_truth</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;statevector_simulator&quot;</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ground_truth</span><span class="p">)),</span> <span class="n">ground_truth</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
 
-        <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preallocated</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+        <span class="n">probabilities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probabilities</span><span class="p">[:]</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">probabilities</span><span class="p">)),</span> <span class="n">probabilities</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">xlim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
 
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Capacity </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span><span class="o">.</span><span class="n">capacity</span><span class="si">}</span><span class="s2">, Recursion </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span><span class="o">.</span><span class="n">recursion_level</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Capacity </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span><span class="o">.</span><span class="n">capacity</span><span class="si">}</span><span class="s2">, Recursion </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_definition</span><span class="o">.</span><span class="n">recursion_level</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
