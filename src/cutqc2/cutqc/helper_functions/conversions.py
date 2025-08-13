@@ -89,24 +89,19 @@ def nearest_probability_distribution(quasiprobability):
         float: Euclidean (L2) distance of distributions.
     Notes:
         Method from Smolin et al., Phys. Rev. Lett. 108, 070502 (2012).
+        Vectorized implementation for improved performance.
     """
-    sorted_probs, states = zip(
-        *sorted(zip(quasiprobability, range(len(quasiprobability))))
-    )
-    num_elems = len(sorted_probs)
-    new_probs = np.zeros(num_elems)
-    beta = 0
-    diff = 0
-    for state, prob in zip(states, sorted_probs):
-        temp = prob + beta / num_elems
-        if temp < 0:
-            beta += prob
-            num_elems -= 1
-            diff += prob * prob
-        else:
-            diff += (beta / num_elems) * (beta / num_elems)
-            new_probs[state] = prob + beta / num_elems
-    return new_probs
+    q = np.asarray(quasiprobability)
+    n = len(q)
+
+    u = np.sort(q)[::-1]
+
+    cssv = np.cumsum(u)
+    rho = np.nonzero(u * np.arange(1, n+1) > (cssv - 1))[0][-1]
+    theta = (cssv[rho] - 1) / (rho + 1)
+    p = np.maximum(q - theta, 0)
+
+    return p
 
 
 def naive_probability_distribution(quasiprobability):
