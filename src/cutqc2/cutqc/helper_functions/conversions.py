@@ -89,16 +89,31 @@ def nearest_probability_distribution(quasiprobability):
         float: Euclidean (L2) distance of distributions.
     Notes:
         Method from Smolin et al., Phys. Rev. Lett. 108, 070502 (2012).
-        Vectorized implementation for improved performance.
+        Vectorized implementation for improved performance and numerical stability.
+        
+        This vectorized approach solves the optimization problem:
+        minimize ||p - q||_2^2 subject to p >= 0 and sum(p) = 1
+        
+        The solution has the form p_i = max(q_i - theta, 0) where theta
+        is chosen to satisfy the normalization constraint.
     """
     q = np.asarray(quasiprobability)
     n = len(q)
 
+    # Sort in descending order to efficiently find the threshold
     u = np.sort(q)[::-1]
 
+    # Cumulative sum of sorted values
     cssv = np.cumsum(u)
+    
+    # Find the largest index rho such that u[rho] - theta > 0
+    # where theta = (sum(u[0:rho+1]) - 1) / (rho + 1)
     rho = np.nonzero(u * np.arange(1, n+1) > (cssv - 1))[0][-1]
+    
+    # Compute the threshold value
     theta = (cssv[rho] - 1) / (rho + 1)
+    
+    # Apply threshold and clip to ensure non-negativity
     p = np.maximum(q - theta, 0)
 
     return p
