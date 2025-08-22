@@ -1,14 +1,6 @@
 cutqc2.cupy package
 ===================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   cutqc2.cupy.simple
-
 Module contents
 ---------------
 
